@@ -1,9 +1,9 @@
 import { Text, View } from 'react-native'
-export default function payment() {
+export default function pos() {
   return (
     <>
       <View>
-        <Text>payment Screen</Text>
+        <Text>pos Screen</Text>
       </View>
     </>
   )

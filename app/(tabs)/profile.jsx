@@ -1,9 +1,9 @@
 import { Text, View } from 'react-native'
-export default function ExploreScreen() {
+export default function profile() {
   return (
     <>
       <View>
-        <Text>Explore Screen</Text>
+        <Text>Profile Screen</Text>
       </View>
     </>
   )

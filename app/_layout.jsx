@@ -14,6 +14,7 @@ export default function RootLayout() {
       <Stack.Screen name="/attendence" />
       <Stack.Screen name="/roles" />
       <Stack.Screen name="/users" />
+      <Stack.Screen name="/orders" />
       <Stack.Screen name="/databasebackup" />
     </Stack>
   );
