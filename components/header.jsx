@@ -5,7 +5,7 @@ import Sidebar from "../components/sidebar";
 
 export default function Header({ title = "Dashboard" }) {
   const [open, setOpen] = useState(false);
-
+ 
   return (
     <>
       <View style={styles.header}>

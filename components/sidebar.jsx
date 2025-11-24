@@ -11,6 +11,7 @@ import {
 
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
@@ -24,6 +25,8 @@ export default function Sidebar({ isOpen, onClose }) {
       useNativeDriver: false,
     }).start();
   }, [isOpen]);
+
+  const router = useRouter();
 
   return (
     <>
@@ -69,10 +72,16 @@ export default function Sidebar({ isOpen, onClose }) {
               <Text style={styles.item}>Orders</Text>
             </View>
 
-            <View style={styles.row}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                router.push("/products");
+                onClose();
+              }}
+            >
               <FontAwesome5 name="box-open" size={22} color="#F48424" solid />
               <Text style={styles.item}>Products</Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.row}>
               <MaterialCommunityIcons
