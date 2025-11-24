@@ -1,10 +1,10 @@
 import { useRef } from "react";
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function ButtonText({ title }) {
+export default function ButtonText({ title, onPress }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const animatePress = () => {
+ const animatePress = () => {
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 0.95,
@@ -16,9 +16,10 @@ export default function ButtonText({ title }) {
         duration: 80,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]).start(() => {
+      if (onPress) onPress();
+    });
   };
-
   return (
     <View style={styles.container}>
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>

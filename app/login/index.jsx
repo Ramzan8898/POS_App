@@ -1,18 +1,20 @@
 import Entypo from "@expo/vector-icons/Entypo";
+import { useRouter } from "expo-router";
 import { Image, StyleSheet, View } from "react-native";
 import Logo from "../../assets/images/logo.png";
 import ButtonText from "../../components/button";
 import InputField from "../../components/input";
+
 export default function Index() {
   const title = "Sign In";
-
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <View style={styles.signin}>
         <Image source={Logo} style={styles.logo} />
       </View>
 
-      <View >
+      <View>
         {/* EMAIL */}
         <InputField
           label="Email"
@@ -30,18 +32,14 @@ export default function Index() {
       </View>
 
       <View style={styles.button}>
-        <ButtonText title={title} />
+        <ButtonText title={title} onPress={() => router.push("(tabs)")} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 ,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-
-  },
+  container: { flex: 1, backgroundColor: "#fff", justifyContent: "center" },
 
   signin: {
     justifyContent: "center",
