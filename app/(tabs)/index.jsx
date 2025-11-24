@@ -1,20 +1,13 @@
-import { useState } from "react";
-import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
-import hamburger from "../../assets/images/sidebar.png";
+import { StyleSheet, View } from "react-native";
 import Cards from "../../components/cards";
-import Sidebar from "../../components/sidebar";
+import Header from "../../components/header";
 export default function Index() {
-  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <TouchableOpacity onPress={() => setOpen(true)}>
-        <Image
-          source={hamburger}
-          style={{ width: 50, height: 50, margin: 20 }}
-        />
-      </TouchableOpacity>
-      <Sidebar isOpen={open} onClose={() => setOpen(false)} />
+    <View style={{backgroundColor:'#fff', flex:1}}>
+      <Header title="Dashboard" />
+    
       <View style={styles.grid}>
         <Cards title="Products" icon="planet" count={11} progress={64} />
         <Cards
@@ -36,14 +29,14 @@ export default function Index() {
           progress={65}
         />
       </View>
+    </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "col",
     justifyContent: "space-between",
     paddingHorizontal: 10,
   },

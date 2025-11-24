@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 import {
-    Animated,
-    Dimensions,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: width * 0.75,
+    zIndex: 99999999,
   },
 
   sidebar: {
@@ -174,15 +175,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E57A6",
     borderTopRightRadius: 30,
     borderBottomRightRadius: 30,
-    position:"relative"
+    position: "relative",
+    zIndex: 999,
+    // ANDROID shadow
+    elevation: 40,
+
+    // IOS shadow
+    shadowColor: "#000",
+    shadowOpacity: 1000000,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
   },
   closeBtn: {
     position: "absolute",
     right: 15,
     top: 40,
-    borderColor:"#F48424",
-    borderWidth:3,
-    borderRadius:100
+    borderColor: "#F48424",
+    borderWidth: 3,
+    borderRadius: 100,
   },
 
   item: {

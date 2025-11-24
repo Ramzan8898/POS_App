@@ -30,7 +30,7 @@ export default function Cards({ title, icon, count = 0, progress = 50 }) {
       <View style={styles.card}>
         {/* LEFT ICON BOX */}
         <View style={styles.iconBox}>
-          <MaterialCommunityIcons name={icon} size={32} color="#4CAF50" />
+          <MaterialCommunityIcons name={icon} size={32} color="#1E57A6" />
         </View>
 
         {/* TITLE + COUNT */}
@@ -52,26 +52,24 @@ export default function Cards({ title, icon, count = 0, progress = 50 }) {
 
 const styles = StyleSheet.create({
   cardContainer: {
-    width: "47%",
     margin: "1.5%",
   },
 
   card: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E57A6",
     borderRadius: 15,
-    padding: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    paddingVertical:20,
+    paddingHorizontal:20,
+    borderRadius:20
+
+
   },
 
   iconBox: {
     width: 55,
     height: 55,
-    backgroundColor: "#EAF7EE",
+    backgroundColor: "#fff",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -83,28 +81,29 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C3D68",
+    fontSize: 18,
+    fontWeight:'bold',
+    color: "#fff",
   },
 
   count: {
     fontSize: 20,
     fontWeight: "700",
     marginVertical: 3,
-    color: "#1C3D68",
+    color: "#fff",
   },
 
   progressBg: {
     width: "100%",
-    height: 7,
-    backgroundColor: "#D8E2E9",
+    height: 10,
     borderRadius: 10,
+    borderWidth:1,
     overflow: "hidden",
+    borderColor:'#fff'
   },
 
   progressFill: {
     height: "100%",
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#fff",
   },
 });
