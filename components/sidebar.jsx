@@ -45,116 +45,69 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* ---------- MENU ITEMS ---------- */}
           <View style={styles.menuItems}>
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="view-dashboard"
-                size={22}
-                color="#F48424"
-              />
+
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/(tabs)'); onClose() }}>
+              <MaterialCommunityIcons name="view-dashboard" size={22} color="#F48424" />
               <Text style={styles.item}>Dashboard</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="point-of-sale"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/pos'); onClose() }}>
+              <MaterialCommunityIcons name="point-of-sale" size={22} color="#F48424" />
               <Text style={styles.item}>POS</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="basket-fill"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/orders'); onClose() }}>
+              <MaterialCommunityIcons name="basket-fill" size={22} color="#F48424" />
               <Text style={styles.item}>Orders</Text>
-            </View>
+            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => {
-                router.push("/products");
-                onClose();
-              }}
-            >
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/products'); onClose() }}>
               <FontAwesome5 name="box-open" size={22} color="#F48424" solid />
               <Text style={styles.item}>Products</Text>
             </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="account-group"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/employees'); onClose() }}>
+              <MaterialCommunityIcons name="account-group" size={22} color="#F48424" />
               <Text style={styles.item}>Employees</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="account-multiple-check"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/customers'); onClose() }}>
+              <MaterialCommunityIcons name="account-multiple-check" size={22} color="#F48424" />
               <Text style={styles.item}>Customers</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="account-tie"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/suppliers'); onClose() }}>
+              <MaterialCommunityIcons name="account-tie" size={22} color="#F48424" />
               <Text style={styles.item}>Suppliers</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="cash-multiple"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/salary'); onClose() }}>
+              <MaterialCommunityIcons name="cash-multiple" size={22} color="#F48424" />
               <Text style={styles.item}>Salary</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="calendar-check"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/attendence'); onClose() }}>
+              <MaterialCommunityIcons name="calendar-check" size={22} color="#F48424" />
               <Text style={styles.item}>Attendance</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="key-variant"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/roles'); onClose() }}>
+              <MaterialCommunityIcons name="key-variant" size={22} color="#F48424" />
               <Text style={styles.item}>Roles</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="account-circle"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/users'); onClose() }}>
+              <MaterialCommunityIcons name="account-circle" size={22} color="#F48424" />
               <Text style={styles.item}>Users</Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="database"
-                size={22}
-                color="#F48424"
-              />
+            <TouchableOpacity style={styles.row} onPress={() => { router.push('/databasebackup'); onClose() }}>
+              <MaterialCommunityIcons name="database" size={22} color="#F48424" />
               <Text style={styles.item}>Database Backup</Text>
-            </View>
+            </TouchableOpacity>
+
           </View>
+
         </View>
       </Animated.View>
     </>
