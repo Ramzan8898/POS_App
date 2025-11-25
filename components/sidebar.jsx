@@ -51,10 +51,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <Text style={styles.item}>Dashboard</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.row} onPress={() => { router.push('/pos'); onClose() }}>
-              <MaterialCommunityIcons name="point-of-sale" size={22} color="#F48424" />
-              <Text style={styles.item}>POS</Text>
-            </TouchableOpacity>
+          
 
             <TouchableOpacity style={styles.row} onPress={() => { router.push('/orders'); onClose() }}>
               <MaterialCommunityIcons name="basket-fill" size={22} color="#F48424" />
