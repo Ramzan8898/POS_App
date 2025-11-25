@@ -37,8 +37,9 @@
         }
       ],
       "expo-image-picker",
-      
-      "expo-video"
+
+      "expo-video",
+      "expo-media-library"
      
     ],
     "experiments": {

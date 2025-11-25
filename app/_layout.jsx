@@ -15,6 +15,7 @@ export default function RootLayout() {
       <Stack.Screen name="roles/index" />
       <Stack.Screen name="users/index" />
       <Stack.Screen name="orders/index" />
+      <Stack.Screen name="pos/receipt" />
       <Stack.Screen name="databasebackup/index" />
     </Stack>
   );
