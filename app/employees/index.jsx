@@ -1,9 +1,18 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import AddUser from "../../components/add";
+import BottomModal from "../../components/BottomModal";
 import Header from "../../components/header";
 import UserTable from "../../components/show";
+import ViewUser from "../../components/ViewUser";
 
 export default function Index() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [mode, setMode] = useState(""); // add | edit | view
+  const [selectedUser, setSelectedUser] = useState(null);
+
   const employeeData = [
     {
       image: "",
@@ -23,6 +32,24 @@ export default function Index() {
     },
   ];
 
+  const openAdd = () => {
+    setMode("add");
+    setSelectedUser(null);
+    setModalVisible(true);
+  };
+
+  const openEdit = (user) => {
+    setMode("edit");
+    setSelectedUser(user);
+    setModalVisible(true);
+  };
+
+  const openView = (user) => {
+    setMode("view");
+    setSelectedUser(user);
+    setModalVisible(true);
+  };
+
   return (
     <View style={styles.screen}>
       <Header title="Employees" />
@@ -31,18 +58,34 @@ export default function Index() {
         data={employeeData}
         showSalary={true}
         showShopName={false}
-        onView={(user) => console.log("View", user)}
-        onEdit={(user) => console.log("Edit", user)}
+        onView={openView}
+        onEdit={openEdit}
         onDelete={(user) => console.log("Delete", user)}
       />
 
-      {/* BOTTOM FIXED ADD BUTTON */}
+      {/* ADD BUTTON */}
       <View style={styles.addButtonWrapper}>
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={openAdd}>
           <MaterialIcons name="add" size={22} color="#fff" />
           <Text style={styles.addButtonText}>Add Employee</Text>
         </TouchableOpacity>
       </View>
+
+      {/* MODAL */}
+      <BottomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      >
+        {mode === "add" && <AddUser title="Employee" showShopName={false} />}
+        {mode === "edit" && (
+          <AddUser
+            title="Edit Employee"
+            showShopName={false}
+            data={selectedUser}
+          />
+        )}
+        {mode === "view" && <ViewUser data={selectedUser} />}
+      </BottomModal>
     </View>
   );
 }
@@ -64,7 +107,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1E57A6",
+    backgroundColor: "#F48424",
     paddingVertical: 12,
     paddingHorizontal: 22,
     borderRadius: 12,

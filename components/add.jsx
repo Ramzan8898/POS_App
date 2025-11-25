@@ -2,6 +2,8 @@ import Entypo from "@expo/vector-icons/Entypo";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
+import DropdownField from "./DropdownField";
+
 import {
   Animated,
   Image,
@@ -9,7 +11,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import InputField from "./input";
 
@@ -17,9 +19,11 @@ export default function AddUser({
   showSalary = true,
   showShopName = true,
   title = "Employee",
+  showType = true,
 }) {
   const [image, setImage] = useState(null);
   const scaleAnim = new Animated.Value(1);
+  const [supplierType, setSupplierType] = useState(null);
 
   const animateBtn = () => {
     Animated.sequence([
@@ -98,6 +102,16 @@ export default function AddUser({
           />
         )}
 
+        {/* SUPPLIER TYPE FIELD (ONLY FOR SUPPLIERS) */}
+        {(title === "Supplier" || title === "Edit Supplier") && (
+          <DropdownField
+            label="Select supplier type"
+            value={supplierType}
+            onChange={setSupplierType}
+            options={["Distributor", "WholeSaler"]}
+          />
+        )}
+
         <InputField
           placeholder="Enter address"
           multiline
@@ -159,13 +173,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
   },
   cancelBtn: {
-    borderWidth: 1,
-    borderColor: "#E91E63",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
+    borderWidth: 2,
+    borderColor: "#F48424",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 10,
   },
-  cancelText: { color: "#E91E63", fontSize: 16 },
+  cancelText: { color: "#F48424", fontSize: 16, fontWeight: "bold" },
 
   saveBtn: {
     backgroundColor: "#1E57A6",
