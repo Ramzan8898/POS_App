@@ -3,12 +3,12 @@
 import Entypo from "@expo/vector-icons/Entypo";
 import { useRef, useState } from "react";
 import {
-    Animated,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function InputField({
