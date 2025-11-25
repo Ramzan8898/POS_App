@@ -1,18 +1,39 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
 
 export default function Index() {
+
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Logged-in user (replace with real auth data)
-  const [user, setUser] = useState({
-    name: "Ali Khan",
-    email: "alikhan@example.com",
-    image: "",
-  });
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        }
+      } catch (err) {
+        console.log("Error loading user:", err);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // 🔥 FIX: Prevent crash while user is null
+  if (!user) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontSize: 18, color: "#555" }}>Loading user...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -22,8 +43,8 @@ export default function Index() {
       <View style={styles.card}>
         <Image
           source={
-            user.image
-              ? { uri: user.image }
+            user.photo
+              ? { uri: user.photo }
               : require("../../assets/images/placeholder.jpg")
           }
           style={styles.avatar}
