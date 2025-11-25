@@ -3,19 +3,19 @@ import { Stack } from "expo-router";
 export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="/splash" />
-      <Stack.Screen name="/login" />
+      <Stack.Screen name="splash/index" />
+      <Stack.Screen name="login/index" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="/products" />
-      <Stack.Screen name="/employees" />
-      <Stack.Screen name="/customers" />
-      <Stack.Screen name="/suppliers" />
-      <Stack.Screen name="/salary" />
-      <Stack.Screen name="/attendence" />
-      <Stack.Screen name="/roles" />
-      <Stack.Screen name="/users" />
-      <Stack.Screen name="/orders" />
-      <Stack.Screen name="/databasebackup" />
+      <Stack.Screen name="products/index" />
+      <Stack.Screen name="employees/index" />
+      <Stack.Screen name="customers/index" />
+      <Stack.Screen name="suppliers/index" />
+      <Stack.Screen name="salary/index" />
+      <Stack.Screen name="attendence/index" />
+      <Stack.Screen name="roles/index" />
+      <Stack.Screen name="users/index" />
+      <Stack.Screen name="orders/index" />
+      <Stack.Screen name="databasebackup/index" />
     </Stack>
   );
 }
