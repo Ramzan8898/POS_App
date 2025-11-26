@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import EditProfileModal from "../../components/EditProfileModal";
@@ -27,11 +28,7 @@ export default function Index() {
 
   // 🔥 FIX: Prevent crash while user is null
   if (!user) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ fontSize: 18, color: "#555" }}>Loading user...</Text>
-      </View>
-    );
+    router.push("login/index");
   }
 
   return (
