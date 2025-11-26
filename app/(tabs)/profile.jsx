@@ -1,12 +1,11 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
 
 export default function Index() {
-
   const [modalVisible, setModalVisible] = useState(false);
 
   const [user, setUser] = useState(null);
@@ -44,7 +43,7 @@ export default function Index() {
         <Image
           source={
             user.photo
-              ? { uri: user.photo }
+              ? { uri: `http://192.168.1.23:8000/storage/${user.photo}` }
               : require("../../assets/images/placeholder.jpg")
           }
           style={styles.avatar}
