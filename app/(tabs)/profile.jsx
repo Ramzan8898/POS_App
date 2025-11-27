@@ -1,34 +1,52 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
 
 export default function Index() {
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
+  const [user, setUser] = useState(undefined); // <-- undefined as initial
+  const [loading, setLoading] = useState(true);
 
-  const [user, setUser] = useState(null);
   useEffect(() => {
     const loadUser = async () => {
       try {
         const storedUser = await AsyncStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
+
+        if (!storedUser) {
+          router.replace("login/index"); // 🚀 safe redirect
+          return;
         }
+
+        setUser(JSON.parse(storedUser));
       } catch (err) {
         console.log("Error loading user:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadUser();
   }, []);
 
-  // 🔥 FIX: Prevent crash while user is null
-  if (!user) {
-    router.push("login/index");
+  // ⏳ While loading user, show loader
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#1E57A6" />
+      </View>
+    );
   }
 
   return (
@@ -65,6 +83,7 @@ export default function Index() {
         onClose={() => setModalVisible(false)}
         onSave={(updated) => {
           setUser(updated);
+          AsyncStorage.setItem("user", JSON.stringify(updated));
           setModalVisible(false);
         }}
       />
@@ -73,11 +92,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#f7f9fc",
-  },
-
+  screen: { flex: 1, backgroundColor: "#f7f9fc" },
   card: {
     margin: 20,
     backgroundColor: "#fff",
@@ -87,7 +102,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     shadowColor: "#000",
   },
-
   avatar: {
     width: 110,
     height: 110,
@@ -95,20 +109,8 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#1E57A6",
   },
-
-  name: {
-    marginTop: 12,
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E57A6",
-  },
-
-  email: {
-    marginTop: 5,
-    fontSize: 14,
-    color: "#666",
-  },
-
+  name: { marginTop: 12, fontSize: 20, fontWeight: "700", color: "#1E57A6" },
+  email: { marginTop: 5, fontSize: 14, color: "#666" },
   editBtn: {
     marginTop: 20,
     flexDirection: "row",
@@ -118,11 +120,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
   },
-
-  editText: {
-    color: "#fff",
-    marginLeft: 6,
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  editText: { color: "#fff", marginLeft: 6, fontSize: 16, fontWeight: "600" },
 });
