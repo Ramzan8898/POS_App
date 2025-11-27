@@ -13,12 +13,11 @@ export default function Index() {
   const [employeeCount, setEmployeeCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 🟢 FETCH BOTH COUNTS IN ONE FUNCTION
   const loadDashboard = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      // 1️⃣ FETCH PRODUCTS
+      // PRODUCTS
       const productsRes = await fetch(`${BASE_URL}/api/products`, {
         method: "GET",
         headers: {
@@ -28,11 +27,11 @@ export default function Index() {
       });
 
       const productsData = await productsRes.json();
-      if (productsData.products) {
+      if (productsData.products && Array.isArray(productsData.products)) {
         setProductCount(productsData.products.length);
       }
 
-      // 2️⃣ FETCH EMPLOYEES
+      // EMPLOYEES
       const employeesRes = await fetch(`${BASE_URL}/api/employees`, {
         method: "GET",
         headers: {
@@ -42,13 +41,15 @@ export default function Index() {
       });
 
       const employeesData = await employeesRes.json();
-      if (employeesData.employees) {
-        setEmployeeCount(employeesData.employees.length);
+      console.log("EMPLOYEES:", employeesData);
+
+      if (employeesData.Employees && Array.isArray(employeesData.Employees)) {
+        setEmployeeCount(employeesData.Employees.length);
       }
     } catch (err) {
       console.log("Dashboard Fetch Error:", err);
     } finally {
-      setLoading(false); // 👈 Loader stops AFTER BOTH COMPLETED
+      setLoading(false);
     }
   };
 
@@ -69,7 +70,6 @@ export default function Index() {
       <Header title="Dashboard" />
 
       <View style={styles.grid}>
-        {/* PRODUCTS CARD */}
         <Pressable onPress={() => router.push("/products")}>
           <Cards
             title="Products"
@@ -79,7 +79,6 @@ export default function Index() {
           />
         </Pressable>
 
-        {/* ORDERS CARD */}
         <Cards
           title="Total Orders"
           icon="basket-fill"
@@ -87,7 +86,6 @@ export default function Index() {
           progress={78}
         />
 
-        {/* EMPLOYEES CARD */}
         <Pressable onPress={() => router.push("/employees")}>
           <Cards
             title="Employees"
@@ -97,7 +95,6 @@ export default function Index() {
           />
         </Pressable>
 
-        {/* CUSTOMERS CARD */}
         <Cards
           title="Customers"
           icon="account-multiple-check"
@@ -110,14 +107,6 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: "column",
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  grid: { flexDirection: "column", paddingHorizontal: 10, marginTop: 10 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

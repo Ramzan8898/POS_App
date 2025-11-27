@@ -7,19 +7,20 @@ export default function ViewUser({ data }) {
     <View style={styles.container}>
       <Image
         source={
-          data.image
-            ? { uri: data.image }
+          data.photo
+            ? { uri: `http://192.168.1.23:8000/storage/${data.photo}` }
             : require("../assets/images/placeholder.jpg")
         }
         style={styles.profile}
       />
-
       <Text style={styles.name}>{data.name}</Text>
       <Text style={styles.phone}>{data.phone}</Text>
       {data.salary ? (
         <Text style={styles.info}>Salary: {data.salary}</Text>
       ) : null}
-      <Text style={styles.info}>Shop: {data.shopName}</Text>
+      {data.shopname ? (
+        <Text style={styles.info}>Shop Name: {data.shopname}</Text>
+      ) : null}
       <Text style={styles.info}>Address: {data.address}</Text>
       {data.role ? <Text style={styles.info}>Role: {data.role}</Text> : null}
       {data.type ? <Text style={styles.info}>Type: {data.type}</Text> : null}

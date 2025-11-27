@@ -22,7 +22,7 @@ export default function Index() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [mode, setMode] = useState("");
+  const [mode, setMode] = useState(""); // view | edit | add
   const [selectedUser, setSelectedUser] = useState(null);
 
   // ****************************************************
@@ -38,13 +38,11 @@ export default function Index() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const raw = await res.text();
-      if (!raw.trim()) return;
+      const data = await res.json();
+      console.log("EMPLOYEES PAGE:", data);
 
-      const data = JSON.parse(raw);
-
-      if (Array.isArray(data.employees)) {
-        setEmployees(data.employees);
+      if (Array.isArray(data.Employees)) {
+        setEmployees(data.Employees);
       }
     } catch (e) {
       console.log("Fetch Employees Error:", e);
@@ -126,33 +124,13 @@ export default function Index() {
   // ****************************************************
   // DELETE EMPLOYEE ==> DELETE /api/employees/{id}
   // ****************************************************
-  const deleteEmployee = (id) => {
-    Alert.alert("Confirm Delete", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem("token");
-
-            const res = await fetch(`${BASE_URL}/api/employees/${id}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-              setEmployees((prev) => prev.filter((e) => e.id !== id));
-              Alert.alert("Deleted", "Employee removed!");
-            }
-          } catch (e) {
-            console.log("Delete Error:", e);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${BASE_URL}/employees/${id}`);
+      fetchEmployees(); // refresh list
+    } catch (e) {
+      Alert.alert("Error deleting employee");
+    }
   };
 
   // ****************************************************
@@ -192,10 +170,19 @@ export default function Index() {
 
       <UserTable
         data={employees}
-        showSalary={true}
-        onView={openView}
-        onEdit={openEdit}
-        onDelete={(item) => deleteEmployee(item.id)}
+        showRole={false}
+        showShopName={false}
+        onView={(user) => {
+          setMode("view");
+          setSelectedUser(user);
+          setModalVisible(true);
+        }}
+        onEdit={(user) => {
+          setMode("edit");
+          setSelectedUser(user);
+          setModalVisible(true);
+        }}
+        onDelete={(user) => handleDelete(user.id)}
       />
 
       <View style={styles.addButtonWrapper}>
@@ -205,12 +192,23 @@ export default function Index() {
         </TouchableOpacity>
       </View>
 
-      <BottomModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        {mode === "add" && <AddUser onSubmit={storeEmployee} />}
+      <BottomModal
+        visible={modalVisible}
+        
+        onClose={() => setModalVisible(false)}
+      >
+        {mode === "view" && <ViewUser data={selectedUser}  showShopName={false} />}
+
         {mode === "edit" && (
-          <AddUser data={selectedUser} onSubmit={(fd) => updateEmployee(selectedUser.id, fd)} />
+          <AddUser
+            title="Edit Employee"
+            data={selectedUser}
+            showType={false}
+            showShopName={false}
+          />
         )}
-        {mode === "view" && <ViewUser data={selectedUser} />}
+
+        {mode === "add" && <AddUser title="Add Employee" showType={false} showShopName={false} />}
       </BottomModal>
     </View>
   );

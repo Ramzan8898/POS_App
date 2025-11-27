@@ -11,6 +11,8 @@ export default function UserTable({
   onEdit,
   onDelete,
 }) {
+  const BASE_URL = "http://192.168.1.23:8000";
+
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -43,13 +45,12 @@ export default function UserTable({
           <View style={[styles.userColumn, { flex: 2 }]}>
             <Image
               source={
-                user.image
-                  ? { uri: user.image }
+                user.photo
+                  ? { uri: `http://192.168.1.23:8000/storage/${user.photo}` }
                   : require("../assets/images/placeholder.jpg")
               }
               style={styles.profile}
             />
-
             <View>
               <Text style={styles.userName} numberOfLines={1}>
                 {user.name}
@@ -79,7 +80,9 @@ export default function UserTable({
 
           {/* ROLE BADGE */}
           {showRole && (
-            <View style={[styles.roleBadge, { flex: 0.7, alignSelf: "center" }]}>
+            <View
+              style={[styles.roleBadge, { flex: 0.7, alignSelf: "center" }]}
+            >
               <Text style={styles.roleText}>{user.role || "N/A"}</Text>
             </View>
           )}

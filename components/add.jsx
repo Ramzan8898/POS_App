@@ -15,15 +15,19 @@ import {
 } from "react-native";
 import InputField from "./input";
 
-export default function AddUser({
+export default function AddUser({data,
   showSalary = true,
   showShopName = true,
   title = "Employee",
   showType = true,
 }) {
-  const [image, setImage] = useState(null);
   const scaleAnim = new Animated.Value(1);
   const [supplierType, setSupplierType] = useState(null);
+  const [image, setImage] = useState(data?.image ?? null);
+  const [name, setName] = useState(data?.name ?? "");
+  const [phone, setPhone] = useState(data?.phone ?? "");
+  const [salary, setSalary] = useState(data?.salary ?? "");
+  const [address, setAddress] = useState(data?.address ?? "");
 
   const animateBtn = () => {
     Animated.sequence([
