@@ -3,12 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
@@ -58,7 +58,7 @@ export default function Index() {
         <Image
           source={
             user.photo
-              ? { uri: `http://192.168.1.23:8000/storage/${user.photo}` }
+              ? { uri: `http://192.168.1.20:8000/storage/${user.photo}` }
               : require("../../assets/images/placeholder.jpg")
           }
           style={styles.avatar}

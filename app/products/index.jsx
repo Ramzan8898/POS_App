@@ -3,17 +3,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Header from "../../components/header";
 
-const BASE_URL = "http://192.168.1.23:8000";
+const BASE_URL = "http://192.168.1.20:8000";
 
 export default function Products() {
   const router = useRouter();

@@ -1,12 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import EditProfileModal from "../../components/EditProfileModal";
 import BottomModal from "../../components/BottomModal";
+import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
 import UserTable from "../../components/show";
 import ViewUser from "../../components/ViewUser";
-const BASE_URL = "http://192.168.1.23:8000";
+const BASE_URL = "http://192.168.1.20:8000";
 
 export default function Index() {
   const [modalVisible, setModalVisible] = useState(false);

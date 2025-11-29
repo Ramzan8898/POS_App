@@ -3,17 +3,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Header from "../../components/header";
 
-const BASE_URL = "http://192.168.1.23:8000";
+const BASE_URL = "http://192.168.1.20:8000";
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams(); //

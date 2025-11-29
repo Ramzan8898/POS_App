@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Cards from "../../components/cards";
 import Header from "../../components/header";
 
-const BASE_URL = "http://192.168.1.23:8000";
+const BASE_URL = "http://192.168.1.20:8000";
 
 export default function Index() {
   const router = useRouter();

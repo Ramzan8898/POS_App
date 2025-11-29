@@ -8,7 +8,7 @@ export default function ViewUser({ data }) {
       <Image
         source={
           data.photo
-            ? { uri: `http://192.168.1.23:8000/storage/${data.photo}` }
+            ? { uri: `http://192.168.1.20:8000/storage/${data.photo}` }
             : require("../assets/images/placeholder.jpg")
         }
         style={styles.profile}
