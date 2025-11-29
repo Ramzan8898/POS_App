@@ -11,7 +11,7 @@ export default function UserTable({
   onEdit,
   onDelete,
 }) {
-  const BASE_URL = "http://192.168.1.23:8000";
+  const BASE_URL = "http://192.168.1.20:8000";
 
   return (
     <View style={styles.container}>
@@ -46,7 +46,7 @@ export default function UserTable({
             <Image
               source={
                 user.photo
-                  ? { uri: `http://192.168.1.23:8000/storage/${user.photo}` }
+                  ? { uri: `http://192.168.1.20:8000/storage/${user.photo}` }
                   : require("../assets/images/placeholder.jpg")
               }
               style={styles.profile}

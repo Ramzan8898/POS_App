@@ -16,7 +16,7 @@ import Header from "../../components/header";
 import UserTable from "../../components/show";
 import ViewUser from "../../components/ViewUser";
 
-const BASE_URL = "http://192.168.1.23:8000";
+const BASE_URL = "http://192.168.1.20:8000";
 
 export default function Index() {
   const [employees, setEmployees] = useState([]);

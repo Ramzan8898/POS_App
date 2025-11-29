@@ -12,7 +12,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const API_URL = "http://192.168.1.23:8000/api/login";
+  const API_URL = "http://192.168.1.20:8000/api/login";
 
   const handleLogin = async () => {
     if (!email || !password) {

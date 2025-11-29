@@ -58,7 +58,7 @@ export default function Index() {
         <Image
           source={
             user.photo
-              ? { uri: `http://192.168.1.23:8000/storage/${user.photo}` }
+              ? { uri: `http://192.168.1.20:8000/storage/${user.photo}` }
               : require("../../assets/images/placeholder.jpg")
           }
           style={styles.avatar}
