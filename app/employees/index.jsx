@@ -1,6 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,37 +20,35 @@ import ViewUser from "../../components/ViewUser";
 const BASE_URL = "http://192.168.1.20:8000/api";
 
 export default function Index() {
+  const router = useRouter();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [mode, setMode] = useState(""); // add | edit | view
+  const [mode, setMode] = useState(""); // view | add
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ============================================
-  // GET TOKEN
-  // ============================================
-  const getToken = async () => {
-    return await AsyncStorage.getItem("token");
-  };
-
-  // ============================================
-  // FETCH ALL EMPLOYEES  => GET /api/employees
-  // ============================================
+  // ==============================================
+  // FETCH ALL EMPLOYEES
+  // ==============================================
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
+      const token = await AsyncStorage.getItem("token");
 
-      const { data } = await axios.get(`${BASE_URL}/employees`, {
+      const res = await fetch(`${BASE_URL}/employees`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (data.success && Array.isArray(data.employees)) {
-        setEmployees(data.employees);
+      const data = await res.json();
+      console.log("EMPLOYEES =>", data);
+
+      if (Array.isArray(data.Employees)) {
+        setEmployees(data.Employees);
+      } else {
+        setEmployees([]);
       }
-    } catch (error) {
-      console.log("Fetch Employees Error:", error);
-      Alert.alert("Error", "Unable to fetch employees!");
+    } catch (e) {
+      console.log("Fetch Employees Error:", e);
     } finally {
       setLoading(false);
     }
@@ -60,158 +58,91 @@ export default function Index() {
     fetchEmployees();
   }, []);
 
-  // ============================================
-  // STORE EMPLOYEE => POST /api/employees
-  // payload: FormData()
-  // ============================================
-  const storeEmployee = async (payload) => {
-    try {
-      const token = await getToken();
+  // ==============================================
+  // DELETE EMPLOYEE
+  // ==============================================
+  const handleDelete = async (id) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this employee?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
 
-      const { data } = await axios.post(`${BASE_URL}/employees`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+              const res = await fetch(`${BASE_URL}/employee/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              });
 
-      if (data.success) {
-        Alert.alert("Success", "Employee added successfully!");
-        setModalVisible(false);
-        fetchEmployees();
-      }
-    } catch (e) {
-      console.log("Store Employee Error:", e);
-      Alert.alert("Error", "Unable to add employee!");
-    }
+              const data = await res.json();
+              console.log("DELETE RESPONSE:", data);
+
+              if (data.Message || data.message) {
+                Alert.alert("Deleted", "Employee removed successfully!");
+                fetchEmployees();
+              }
+            } catch (e) {
+              console.log("Delete Error:", e);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  // ============================================
-  // FETCH SINGLE EMPLOYEE => GET /api/employees/{id}
-  // ============================================
-  const fetchSingleEmployee = async (id) => {
-    try {
-      const token = await getToken();
-
-      const { data } = await axios.get(`${BASE_URL}/employees/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      return data.employee;
-    } catch (e) {
-      console.log("Fetch Single Error:", e);
-    }
-  };
-
-  // ============================================
-  // UPDATE EMPLOYEE => PUT /api/employees/{id}
-  // payload must be FormData with _method=PUT
-  // ============================================
-  const updateEmployee = async (id, payload) => {
-    try {
-      payload.append("_method", "PUT");
-      const token = await getToken();
-
-      const { data } = await axios.post(
-        `${BASE_URL}/employees/${id}`,
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (data.success) {
-        Alert.alert("Success", "Employee updated successfully!");
-        setModalVisible(false);
-        fetchEmployees();
-      }
-    } catch (e) {
-      console.log("Update Error:", e);
-      Alert.alert("Error", "Unable to update employee!");
-    }
-  };
-
-  // ============================================
-  // DELETE EMPLOYEE => DELETE /api/employees/{id}
-  // ============================================
-  const deleteEmployee = async (id) => {
-    try {
-      const token = await getToken();
-
-      await axios.delete(`${BASE_URL}/employees/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      Alert.alert("Deleted!", "Employee removed successfully!");
-      fetchEmployees();
-    } catch (e) {
-      console.log("Delete Error:", e);
-      Alert.alert("Error", "Unable to delete employee!");
-    }
-  };
-
-  // ============================================
-  // OPEN MODALS
-  // ============================================
-  const openAdd = () => {
-    setMode("add");
-    setSelectedUser(null);
-    setModalVisible(true);
-  };
-
-  const openEdit = async (user) => {
-    const fullEmployee = await fetchSingleEmployee(user.id);
-    setSelectedUser(fullEmployee);
-    setMode("edit");
-    setModalVisible(true);
-  };
-
-  const openView = async (user) => {
-    const fullEmployee = await fetchSingleEmployee(user.id);
-    setSelectedUser(fullEmployee);
-    setMode("view");
-    setModalVisible(true);
-  };
-
-  // ============================================
-  // LOADING UI
-  // ============================================
-  if (loading)
+  // ==============================================
+  // UI LOADER
+  // ==============================================
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#1E57A6" />
         <Text>Loading Employees...</Text>
       </View>
     );
+  }
 
-  // ============================================
-  // UI
-  // ============================================
+  // ==============================================
+  // MAIN UI
+  // ==============================================
   return (
     <View style={styles.screen}>
       <Header title="Employees" />
 
       <UserTable
         data={employees}
-        onView={async (user) => {
-          const fullEmployee = await fetchSingleEmployee(user.id);
-          setSelectedUser(fullEmployee);
+        showRole={false}
+        showShopName={false}
+        onView={(user) => {
+          setSelectedUser(user);
           setMode("view");
           setModalVisible(true);
         }}
-        onEdit={async (user) => {
-          const fullEmployee = await fetchSingleEmployee(user.id);
-          setSelectedUser(fullEmployee);
-          setMode("edit");
-          setModalVisible(true);
-        }}
-        onDelete={(user) => deleteEmployee(user.id)}
-        showRole={false}
-        showShopName={false}
+        onEdit={(emp) => router.push(`/employees/edit/${emp.id}`)}
+        onDelete={(emp) => handleDelete(emp.id)}
       />
 
+      {/* ADD BUTTON */}
       <View style={styles.addButtonWrapper}>
-        <TouchableOpacity style={styles.addButton} onPress={openAdd}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            setMode("add");
+            setSelectedUser(null);
+            setModalVisible(true);
+          }}
+        >
           <MaterialIcons name="add" size={22} color="#fff" />
-          <Text style={styles.addButtonText}>Add Employee</Text>
+            <Text style={styles.addButtonText}>Add Employee</Text>
         </TouchableOpacity>
       </View>
 
+      {/* BOTTOM MODAL */}
       <BottomModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -219,23 +150,12 @@ export default function Index() {
         {mode === "view" && (
           <ViewUser data={selectedUser} showShopName={false} />
         )}
-
-        {mode === "edit" && (
-          <AddUser
-            title="Edit Employee"
-            data={selectedUser}
-            onSubmit={(payload) => updateEmployee(selectedUser.id, payload)}
-            showType={false}
-            showShopName={false}
-          />
-        )}
-
         {mode === "add" && (
           <AddUser
             title="Add Employee"
-            onSubmit={storeEmployee}
             showType={false}
             showShopName={false}
+            onSuccess={fetchEmployees}
           />
         )}
       </BottomModal>
