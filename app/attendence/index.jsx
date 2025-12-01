@@ -1,6 +1,8 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Modal,
   StyleSheet,
@@ -10,12 +12,7 @@ import {
 } from "react-native";
 import Header from "../../components/header";
 
-const EMPLOYEES = [
-  { id: 1, name: "Ali Khan", phone: "0300-1234567" },
-  { id: 2, name: "Ahmed Raza", phone: "0312-9988776" },
-  { id: 3, name: "Bilal Aslam", phone: "0321-5566778" },
-  { id: 4, name: "Hamza Tariq", phone: "0345-8976543" },
-];
+const BASE_URL = "http://192.168.1.17:8000/api";
 
 const STATUS_OPTIONS = [
   { key: "present", label: "Present", color: "#27AE60" },
@@ -25,20 +22,63 @@ const STATUS_OPTIONS = [
 ];
 
 export default function Index() {
-  const [attendance, setAttendance] = useState(
-    EMPLOYEES.map((emp) => ({ ...emp, status: "present" }))
-  );
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // 🚀 FETCH EMPLOYEES + TODAY'S ATTENDANCE
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
+      const today = new Date().toISOString().slice(0, 10);
+
+      // ALL EMPLOYEES
+      const empRes = await fetch(`${BASE_URL}/employees`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const empJson = await empRes.json();
+      const employeesList = empJson.Employees ?? [];
+
+      // TODAYS ATTENDANCE
+      const attRes = await fetch(`${BASE_URL}/attendence/today?date=${today}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const attJson = await attRes.json();
+      const todayAttendance = attJson.attendence ?? [];
+
+      // MERGE STATUS
+      const merged = employeesList.map((emp) => {
+        const found = todayAttendance.find((a) => a.employee_id === emp.id);
+        return {
+          ...emp,
+          status: found ? found.status : "present", // backend status or default
+        };
+      });
+
+      setEmployees(merged);
+    } catch (err) {
+      console.log("FETCH ERROR =>", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // SELECT STATUS MODAL
   const openStatusModal = (user) => {
     setSelectedUser(user);
     setModalVisible(true);
   };
 
+  // UPDATE STATUS LOCAL
   const updateStatus = (status) => {
-    setAttendance((prev) =>
+    setEmployees((prev) =>
       prev.map((item) =>
         item.id === selectedUser.id ? { ...item, status } : item
       )
@@ -46,47 +86,86 @@ export default function Index() {
     setModalVisible(false);
   };
 
-  const saveAttendance = () => {
-    console.log("ATTENDANCE SAVED =>", attendance);
-    alert("Attendance Saved Successfully!");
+  // 🚀 SAVE ATTENDANCE
+  const saveAttendance = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+
+      const payload = {
+        date: new Date().toISOString().slice(0, 10),
+        employees: employees.map((item) => ({
+          employee_id: item.id,
+          status: item.status,
+        })),
+      };
+
+      console.log("ATTENDANCE PAYLOAD =>", payload);
+
+      const res = await fetch(`${BASE_URL}/attendence/store`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      console.log("STORE RESPONSE =>", json);
+
+      if (json.status === true) {
+        alert("Attendance Saved Successfully!");
+        fetchEmployees(); // reload updated values
+      } else {
+        alert("Failed to save attendance");
+      }
+    } catch (err) {
+      console.log("ATTENDANCE ERROR =>", err);
+    }
   };
 
   return (
     <View style={styles.screen}>
       <Header title="Attendance" />
 
-      {/* DATE */}
       <View style={styles.dateBox}>
         <MaterialIcons name="calendar-month" size={22} color="#1E57A6" />
         <Text style={styles.dateText}>{new Date().toDateString()}</Text>
       </View>
 
-      {/* LIST */}
-      <FlatList
-        data={attendance}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        renderItem={({ item }) => {
-          const statusObj = STATUS_OPTIONS.find((s) => s.key === item.status);
-          return (
-            <View style={styles.row}>
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.name}</Text>
-                <Text style={styles.userPhone}>{item.phone}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#1E57A6" />
+      ) : (
+        <FlatList
+          data={employees}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          renderItem={({ item }) => {
+            const statusObj = STATUS_OPTIONS.find((s) => s.key === item.status);
+
+            return (
+              <View style={styles.row}>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{item.name}</Text>
+                  <Text style={styles.userPhone}>{item.phone}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.statusBtn,
+                    { backgroundColor: statusObj.color },
+                  ]}
+                  onPress={() => openStatusModal(item)}
+                >
+                  <Text style={styles.statusText}>{statusObj.label}</Text>
+                </TouchableOpacity>
               </View>
+            );
+          }}
+        />
+      )}
 
-              <TouchableOpacity
-                style={[styles.statusBtn, { backgroundColor: statusObj.color }]}
-                onPress={() => openStatusModal(item)}
-              >
-                <Text style={styles.statusText}>{statusObj.label}</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
-
-      {/* SAVE BUTTON */}
       <View style={styles.saveWrapper}>
         <TouchableOpacity style={styles.saveButton} onPress={saveAttendance}>
           <MaterialIcons name="save" size={22} color="#fff" />
@@ -94,7 +173,7 @@ export default function Index() {
         </TouchableOpacity>
       </View>
 
-      {/* STATUS SELECT MODAL */}
+      {/* STATUS MODAL */}
       <Modal transparent visible={modalVisible} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -133,11 +212,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  dateText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1E57A6",
-  },
+  dateText: { fontSize: 16, fontWeight: "600", color: "#1E57A6" },
 
   row: {
     flexDirection: "row",
@@ -149,34 +224,15 @@ const styles = StyleSheet.create({
   },
 
   userInfo: { flex: 1 },
+  userName: { fontSize: 16, fontWeight: "700", color: "#1E57A6" },
+  userPhone: { fontSize: 13, color: "#555", marginTop: 2 },
 
-  userName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E57A6",
-  },
-
-  userPhone: {
-    fontSize: 13,
-    color: "#555",
-    marginTop: 2,
-  },
-
-  statusBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-  },
-
-  statusText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  statusBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 25 },
+  statusText: { color: "#fff", fontSize: 14, fontWeight: "600" },
 
   saveWrapper: {
     position: "absolute",
-    bottom: 80,
+    bottom: 90,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -191,12 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  saveText: {
-    color: "#fff",
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: "700",
-  },
+  saveText: { color: "#fff", fontSize: 16, marginLeft: 8, fontWeight: "700" },
 
   modalOverlay: {
     flex: 1,
@@ -207,8 +258,8 @@ const styles = StyleSheet.create({
   modalBox: {
     backgroundColor: "#fff",
     padding: 20,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
 
   modalTitle: {
@@ -218,11 +269,7 @@ const styles = StyleSheet.create({
     color: "#1E57A6",
   },
 
-  option: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
+  option: { paddingVertical: 12, borderRadius: 8, marginBottom: 10 },
 
   optionText: {
     color: "#fff",

@@ -1,103 +1,188 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Header from "../../components/header";
-import SalaryModal from "../../components/SalaryModal";
 
-const EMPLOYEES = [
-  { id: 1, name: "Ali Khan", phone: "0300-1234567", salary: 25000 },
-  { id: 2, name: "Ahmed Raza", phone: "0312-9988776", salary: 30000 },
-  { id: 3, name: "Bilal Aslam", phone: "0321-5566778", salary: 28000 },
-  { id: 4, name: "Hamza Tariq", phone: "0345-8976543", salary: 26000 },
-];
+const BASE_URL = "http://192.168.1.17:8000/api";
 
-export default function Index() {
-  const [list, setList] = useState(
-    EMPLOYEES.map((emp) => ({
-      ...emp,
-      paid: 0,
-      deduction: 0,
-      bonus: 0,
-      remarks: "",
-    }))
-  );
+export default function SalaryScreen() {
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selected, setSelected] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const currentMonth = new Date().toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
-  const openEdit = (item) => {
-    setSelected(item);
-    setModalVisible(true);
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
+
+      const empRes = await fetch(`${BASE_URL}/employees`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const empJson = await empRes.json();
+      const list = empJson.Employees ?? [];
+
+      const updated = await Promise.all(
+        list.map(async (emp) => {
+          const res = await fetch(`${BASE_URL}/salary/employee/${emp.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const js = await res.json();
+          const s = js.salary ?? {};
+
+          const paid = s.paid_this_month ?? 0;
+          const remaining = (s.basic_salary ?? emp.salary) - paid;
+
+          return {
+            ...emp,
+            basic_salary: s.basic_salary ?? emp.salary,
+            paid_this_month: paid,
+            remaining_salary: remaining,
+            advance_salary: s.advance_salary ?? 0,
+          };
+        })
+      );
+
+      setEmployees(updated);
+    } catch (e) {
+      console.log("SALARY FETCH ERROR", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const saveSalary = (updated) => {
-    setList((prev) =>
-      prev.map((item) => (item.id === updated.id ? updated : item))
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const paySalary = async (emp, amount) => {
+    if (emp.remaining_salary <= 0)
+      return Alert.alert("Notice", "Salary fully paid already!");
+
+    try {
+      const token = await AsyncStorage.getItem("token");
+
+      const payload = {
+        employee_id: emp.id,
+        date: new Date().toISOString().slice(0, 10),
+        amount: amount,
+      };
+
+      const res = await fetch(`${BASE_URL}/salary/pay`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      Alert.alert(json.success ? "Success" : "Failed", json.message);
+
+      if (json.success) fetchEmployees();
+    } catch (err) {
+      console.log("PAY ERROR =>", err);
+    }
+  };
+
+  const payPartial = (emp) => {
+    Alert.prompt(
+      "Partial Payment",
+      "Enter amount to pay:",
+      (val) => {
+        const amount = Number(val);
+        if (!amount || amount <= 0) return Alert.alert("Invalid Amount");
+
+        if (amount > emp.remaining_salary)
+          return Alert.alert("Cannot exceed remaining salary!");
+
+        paySalary(emp, amount);
+      },
+      "plain-text",
+      "",
+      "numeric"
     );
-    setModalVisible(false);
   };
 
   return (
     <View style={styles.screen}>
       <Header title="Salary" />
 
-      {/* MONTH */}
       <View style={styles.monthBox}>
         <MaterialIcons name="calendar-month" size={22} color="#1E57A6" />
-        <Text style={styles.monthText}>
-          {new Date().toLocaleString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
-        </Text>
+        <Text style={styles.monthText}>{currentMonth}</Text>
       </View>
 
-      <FlatList
-        data={list}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        renderItem={({ item }) => {
-          const net = item.paid - item.deduction + item.bonus;
-          return (
-            <View style={styles.row}>
-              {/* INFO */}
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.phone}>{item.phone}</Text>
-                <Text style={styles.salary}>
-                  Basic Salary: Rs {item.salary}
-                </Text>
-                <Text style={styles.salary}>Paid: Rs {item.paid}</Text>
-                <Text style={styles.salary}>Cutting: Rs {item.deduction}</Text>
-                <Text style={styles.salary}>Bonus: Rs {item.bonus}</Text>
-                <Text style={styles.net}>Net: Rs {net}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#1E57A6" />
+      ) : (
+        <FlatList
+          data={employees}
+          keyExtractor={(i) => i.id.toString()}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => {
+            const isPaid = item.remaining_salary <= 0;
+
+            return (
+              <View style={styles.row}>
+                <View style={styles.info}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.phone}>{item.phone}</Text>
+
+                  <Text style={styles.salary}>
+                    Basic Salary: Rs {item.basic_salary}
+                  </Text>
+                  <Text style={styles.advance}>
+                    Advance: Rs {item.advance_salary}
+                  </Text>
+                  <Text style={styles.paid}>
+                    Paid This Month: Rs {item.paid_this_month}
+                  </Text>
+                  <Text style={styles.remaining}>
+                    Remaining: Rs {item.remaining_salary}
+                  </Text>
+                </View>
+
+                {/* BUTTON GROUP */}
+                <View>
+                  {/* FULL PAY BUTTON */}
+                  <TouchableOpacity
+                    style={[styles.payBtn, isPaid && styles.disabledBtn]}
+                    disabled={isPaid}
+                    onPress={() => paySalary(item, item.remaining_salary)}
+                  >
+                    <Text style={styles.btnText}>Full Pay</Text>
+                  </TouchableOpacity>
+
+                  {/* PARTIAL PAY BUTTON */}
+                  <TouchableOpacity
+                    style={[styles.partialBtn, isPaid && styles.disabledBtn]}
+                    disabled={isPaid}
+                    onPress={() => payPartial(item)}
+                  >
+                    <Text style={styles.btnText}>Partial</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              {/* EDIT BUTTON */}
-              <TouchableOpacity
-                style={styles.editBtn}
-                onPress={() => openEdit(item)}
-              >
-                <MaterialIcons name="edit" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
-
-      {/* MODAL */}
-      <SalaryModal
-        visible={modalVisible}
-        data={selected}
-        onClose={() => setModalVisible(false)}
-        onSave={saveSalary}
-      />
+            );
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -110,28 +195,41 @@ const styles = StyleSheet.create({
     padding: 15,
     gap: 10,
   },
-  monthText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1E57A6",
-  },
+  monthText: { fontSize: 16, fontWeight: "bold", color: "#1E57A6" },
+
   row: {
     flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     alignItems: "center",
   },
   info: { flex: 1 },
   name: { fontSize: 16, fontWeight: "700", color: "#1E57A6" },
-  phone: { fontSize: 13, color: "#555" },
-  salary: { fontSize: 13, color: "#000", marginTop: 2 },
-  net: { fontSize: 14, color: "#27AE60", fontWeight: "700", marginTop: 5 },
-  editBtn: {
-    backgroundColor: "#F48424",
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+  phone: { fontSize: 13, color: "#666" },
+  salary: { fontSize: 13, marginTop: 2 },
+  advance: { fontSize: 13, color: "#F48424" },
+  paid: { fontSize: 13, color: "#1E57A6" },
+  remaining: {
+    fontSize: 14,
+    marginTop: 2,
+    fontWeight: "700",
+    color: "#E91E63",
   },
+  done: { color: "#27AE60", fontWeight: "bold" },
+
+  payBtn: {
+    backgroundColor: "#27AE60",
+    paddingVertical: 6,
+    marginBottom: 6,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+  },
+  partialBtn: {
+    backgroundColor: "#F48424",
+    paddingVertical: 6,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+  },
+  btnText: { color: "#fff", fontWeight: "700", textAlign: "center" },
 });
