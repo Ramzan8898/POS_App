@@ -197,7 +197,7 @@ export default function Index() {
           <FlatList
             data={filtered}
             scrollEnabled={false}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id.toString()} 
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[
