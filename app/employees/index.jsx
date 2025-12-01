@@ -3,21 +3,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
-import AddUser from "../../components/add";
+import AddUser from "../../components/AddEmployee";
 import BottomModal from "../../components/BottomModal";
 import Header from "../../components/header";
 import UserTable from "../../components/show";
 import ViewUser from "../../components/ViewUser";
 
-const BASE_URL = "http://192.168.1.20:8000/api";
+const BASE_URL = "http://192.168.1.17:8000/api";
 
 export default function Index() {
   const router = useRouter();

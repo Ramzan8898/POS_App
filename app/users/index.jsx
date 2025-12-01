@@ -6,11 +6,11 @@ import EditProfileModal from "../../components/EditProfileModal";
 import Header from "../../components/header";
 import UserTable from "../../components/show";
 import ViewUser from "../../components/ViewUser";
-const BASE_URL = "http://192.168.1.20:8000";
+const BASE_URL = "http://192.168.1.17:8000";
 
 export default function Index() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [mode, setMode] = useState(""); // view | editRole
+  const [mode, setMode] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [Loading, setLoading] = useState(true);
   const [userList, setUserList] = useState([]);

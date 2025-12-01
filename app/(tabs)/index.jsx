@@ -5,13 +5,14 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Cards from "../../components/cards";
 import Header from "../../components/header";
 
-const BASE_URL = "http://192.168.1.20:8000";
+const BASE_URL = "http://192.168.1.17:8000";
 
 export default function Index() {
   const router = useRouter();
   const [productCount, setProductCount] = useState(0);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [customerCount, setCustomerCount] = useState(0);
 
   const loadDashboard = async () => {
     try {
@@ -41,10 +42,24 @@ export default function Index() {
       });
 
       const employeesData = await employeesRes.json();
-      console.log("EMPLOYEES:", employeesData);
-
       if (employeesData.Employees && Array.isArray(employeesData.Employees)) {
         setEmployeeCount(employeesData.Employees.length);
+      }
+
+      // CUSTOMERS 🚀 (NEW BLOCK)
+      const customersRes = await fetch(`${BASE_URL}/api/customers`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const customersData = await customersRes.json();
+      console.log("CUSTOMERS:", customersData);
+
+      if (customersData.Customers && Array.isArray(customersData.Customers)) {
+        setCustomerCount(customersData.Customers.length);
       }
     } catch (err) {
       console.log("Dashboard Fetch Error:", err);
@@ -94,13 +109,14 @@ export default function Index() {
             progress={92}
           />
         </Pressable>
-
-        <Cards
-          title="Customers"
-          icon="account-multiple-check"
-          count={350}
-          progress={65}
-        />
+        <Pressable onPress={() => router.push("/customers")}>
+          <Cards
+            title="Customers"
+            icon="account-multiple-check"
+            count={customerCount}
+            progress={65}
+          />
+        </Pressable>
       </View>
     </View>
   );

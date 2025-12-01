@@ -4,43 +4,38 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import InputField from "./input";
 
 const BASE_URL = "http://192.168.1.17:8000/api";
 
-export default function AddUser({ title = "Employee", onSuccess, onClose }) {
+export default function AddSupplier({ onSuccess, onClose }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const [image, setImage] = useState(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [salary, setSalary] = useState(""); // employee only
-  const [balance, setBalance] = useState(""); // customer only
-  const [shopname, setShopName] = useState(""); // customer only
+  const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // PICK IMAGE
   const pickImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
     });
-
     if (!res.canceled) setImage(res.assets[0]);
   };
 
-  // BUTTON ANIMATION
   const animate = () => {
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -56,65 +51,54 @@ export default function AddUser({ title = "Employee", onSuccess, onClose }) {
     ]).start();
   };
 
-  // SUBMIT FORM
   const handleSave = async () => {
     animate();
 
     if (!name || !phone) {
-      return Alert.alert("Validation", "Name & phone are required!");
+      return Alert.alert("Required", "Supplier name & phone are required!");
     }
 
     try {
       setSaving(true);
       const token = await AsyncStorage.getItem("token");
-      const form = new FormData();
 
+      const form = new FormData();
       form.append("name", name);
       form.append("phone", phone);
+      form.append("type", type);
       form.append("address", address);
-
-      let endpoint = "";
-
-      if (title === "Employee") {
-        form.append("salary", salary);
-        endpoint = `${BASE_URL}/employee/store`;
-      } else if (title === "Customer") {
-        form.append("balance", balance);
-        form.append("shopname", shopname); // FINAL FIX
-        endpoint = `${BASE_URL}/customer/store`;
-      }
 
       if (image) {
         form.append("photo", {
           uri: image.uri,
           type: "image/jpeg",
-          name: `${title.toLowerCase()}_${Date.now()}.jpg`,
+          name: `supplier_${Date.now()}.jpg`,
         });
       }
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${BASE_URL}/supplier/store`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
-          "Content-Type": "multipart/form-data", // 👈 REQUIRED FIX
+          "Content-Type": "multipart/form-data",
         },
         body: form,
       });
 
       const data = await res.json();
-      console.log("STORE RESPONSE:", data);
+      console.log("STORE SUPPLIER =>", data);
 
-      if (data.success || data.Message) {
-        Alert.alert("Success", `${title} added successfully!`);
-        onClose?.();
+      if (data.Message === "Success") {
+        Alert.alert("Success", "Supplier added successfully!");
         onSuccess?.();
+        onClose?.();
       } else {
-        Alert.alert("Error", data.message || "Something went wrong!");
+        Alert.alert("Error", "Unable to add supplier!");
       }
-    } catch (err) {
-      console.log("Store Error:", err);
-      Alert.alert("Error", "Something went wrong!");
+    } catch (e) {
+      console.log("STORE ERROR:", e);
+      Alert.alert("Error", "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -122,9 +106,8 @@ export default function AddUser({ title = "Employee", onSuccess, onClose }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Add {title}</Text>
+      <Text style={styles.heading}>Add Supplier</Text>
 
-      {/* IMAGE PICKER */}
       <View style={styles.imageRow}>
         <Image
           source={
@@ -134,70 +117,41 @@ export default function AddUser({ title = "Employee", onSuccess, onClose }) {
           }
           style={styles.profile}
         />
-
         <TouchableOpacity style={styles.browseBtn} onPress={pickImage}>
           <Text style={styles.browseText}>Select Image</Text>
         </TouchableOpacity>
       </View>
 
-      {/* NAME */}
       <InputField
-        placeholder="Enter name"
+        placeholder="Name"
         value={name}
         onChangeText={setName}
         iconLeft={<Entypo name="user" size={20} color="#19529C" />}
       />
 
-      {/* PHONE */}
       <InputField
-        placeholder="Enter phone"
+        placeholder="Phone"
         value={phone}
-        onChangeText={setPhone}
         keyboardType="phone-pad"
+        onChangeText={setPhone}
         iconLeft={<MaterialIcons name="phone" size={20} color="#19529C" />}
       />
 
-      {/* EMPLOYEE FIELD */}
-      {title === "Employee" && (
-        <InputField
-          placeholder="Enter salary"
-          value={salary}
-          onChangeText={setSalary}
-          keyboardType="numeric"
-          iconLeft={<MaterialIcons name="payments" size={20} color="#19529C" />}
-        />
-      )}
-
-      {/* CUSTOMER FIELDS */}
-      {title === "Customer" && (
-        <>
-          <InputField
-            placeholder="Enter balance"
-            value={balance}
-            onChangeText={setBalance}
-            keyboardType="numeric"
-            iconLeft={<MaterialIcons name="money" size={20} color="#19529C" />}
-          />
-
-          <InputField
-            placeholder="Enter shop name"
-            value={shopname}
-            onChangeText={setShopName}
-            iconLeft={<Entypo name="shop" size={20} color="#19529C" />}
-          />
-        </>
-      )}
-
-      {/* ADDRESS */}
       <InputField
-        placeholder="Enter address"
+        placeholder="Supplier Type"
+        value={type}
+        onChangeText={setType}
+        iconLeft={<MaterialIcons name="payments" size={20} color="#19529C" />}
+      />
+
+      <InputField
+        placeholder="Address"
         value={address}
-        onChangeText={setAddress}
         multiline
+        onChangeText={setAddress}
         iconLeft={<Entypo name="location" size={20} color="#19529C" />}
       />
 
-      {/* BUTTONS */}
       <View style={styles.btnRow}>
         <Pressable style={styles.cancelBtn} onPress={onClose}>
           <Text style={styles.cancelText}>Cancel</Text>
@@ -232,9 +186,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 50,
-    marginRight: 15,
     borderWidth: 2,
     borderColor: "#ddd",
+    marginRight: 15,
   },
   browseBtn: {
     borderWidth: 1,
@@ -243,18 +197,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
   },
-  browseText: { color: "#1E57A6" },
+  browseText: { color: "#1E57A6", fontWeight: "600" },
   btnRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 25,
     paddingHorizontal: 25,
+    marginTop: 25,
   },
   cancelBtn: {
     borderWidth: 2,
     borderColor: "#F48424",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    padding: 10,
     borderRadius: 10,
   },
   cancelText: { color: "#F48424", fontWeight: "bold" },
