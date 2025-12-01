@@ -120,28 +120,60 @@ export default function Index() {
         </View>
 
         <Text style={styles.sectionTitle}>Products</Text>
-        <FlatList
-          data={filtered}
-          scrollEnabled={false}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => addToCart(item)}
-            >
-              <Image source={item.image} style={styles.image} />
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.price}>Rs {item.price}</Text>
-              </View>
-              <MaterialCommunityIcons
-                name="plus-circle"
-                size={26}
-                color="#1E57A6"
-              />
-            </TouchableOpacity>
-          )}
-        />
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#1E57A6" />
+        ) : (
+          <FlatList
+            data={filtered}
+            scrollEnabled={false}
+            keyExtractor={(item) => item.id.toString()} 
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.card,
+                  item.product_store <= 0 && { opacity: 0.3 },
+                ]}
+                disabled={item.product_store <= 0}
+                onPress={() => addToCart(item)}
+              >
+                <Image
+                  source={
+                    item.product_image
+                      ? { uri: item.product_image }
+                      : require("../../assets/images/product.webp")
+                  }
+                  style={styles.image}
+                />
+
+                <View style={styles.info}>
+                  <Text style={styles.name}>{item.product_name}</Text>
+                  <View
+                    style={{ display: "flex", flexDirection: "row", gap: 14, alignItems:"center" }}
+                  >
+                    <View
+                      style={[
+                        styles.stockBadge,
+                        item.product_store === 0 && { backgroundColor: "red" },
+                      ]}
+                    >
+                      <Text style={styles.stockText}>
+                        Stock: {item.product_store}
+                      </Text>
+                    </View>
+                    <Text style={styles.price}>Rs, {item.selling_price}</Text>
+                  </View>
+                </View>
+
+                <MaterialCommunityIcons
+                  name="plus-circle"
+                  size={24}
+                  color="#1E57A6"
+                />
+              </TouchableOpacity>
+            )}
+          />
+        )}
 
         {/* CART SECTION */}
         <Text style={styles.sectionTitle}>Selected Items</Text>
