@@ -119,7 +119,6 @@ export default function Index() {
           />
         </View>
 
-        {/* PRODUCT LIST */}
         <Text style={styles.sectionTitle}>Products</Text>
         <FlatList
           data={filtered}
