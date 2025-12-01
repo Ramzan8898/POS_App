@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy"; // ✅ FIXED
-import * as MediaLibrary from "expo-media-library"; // ✅ For saving to gallery
+import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useRef } from "react";
@@ -17,6 +17,7 @@ import Header from "../../components/header";
 export default function Receipt() {
   const params = useLocalSearchParams();
   const router = useRouter();
+
   const cart = JSON.parse(params.cart);
 
   const subtotal = Number(params.subtotal);
@@ -27,25 +28,19 @@ export default function Receipt() {
 
   const shotRef = useRef();
 
-  // ---------------- SAVE & SHARE IMAGE ---------------- //
   const saveAndShare = async () => {
     try {
       const uri = await shotRef.current.capture();
 
       const fileUri = FileSystem.documentDirectory + "receipt.png";
 
-      await FileSystem.copyAsync({
-        from: uri,
-        to: fileUri,
-      });
+      await FileSystem.copyAsync({ from: uri, to: fileUri });
 
-      // Save to gallery
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (permission.status === "granted") {
         await MediaLibrary.saveToLibraryAsync(fileUri);
       }
 
-      // Share
       await Sharing.shareAsync(fileUri);
     } catch (err) {
       console.log("RECEIPT ERROR => ", err);
@@ -64,9 +59,11 @@ export default function Receipt() {
 
               {cart.map((item) => (
                 <View key={item.id} style={styles.row}>
-                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.name}>{item.product_name}</Text>
                   <Text style={styles.qty}>{item.qty}x</Text>
-                  <Text style={styles.price}>Rs {item.price * item.qty}</Text>
+                  <Text style={styles.price}>
+                    Rs {item.selling_price * item.qty}
+                  </Text>
                 </View>
               ))}
 
@@ -76,14 +73,17 @@ export default function Receipt() {
                 <Text>Subtotal</Text>
                 <Text>Rs {subtotal}</Text>
               </View>
+
               <View style={styles.summary}>
-                <Text>Tax</Text>
+                <Text>Tax (5%)</Text>
                 <Text>Rs {tax}</Text>
               </View>
+
               <View style={styles.summary}>
-                <Text>Discount</Text>
+                <Text>Discount (2%)</Text>
                 <Text>- Rs {discount}</Text>
               </View>
+
               <View style={styles.summary}>
                 <Text>Previous Balance</Text>
                 <Text>Rs {previousBalance}</Text>
@@ -98,7 +98,6 @@ export default function Receipt() {
             </View>
           </ViewShot>
 
-          {/* ---------------- BUTTONS ---------------- */}
           <TouchableOpacity style={styles.btn} onPress={saveAndShare}>
             <MaterialCommunityIcons name="download" size={22} color="#fff" />
             <Text style={styles.btnText}>Save & Share</Text>
@@ -139,7 +138,7 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 16, flex: 1 },
   qty: { width: 40, textAlign: "center" },
-  price: { width: 90, textAlign: "right" },
+  price: { width: 90, textAlign: "right", fontWeight: "700" },
   line: {
     height: 1,
     backgroundColor: "#ddd",
@@ -158,8 +157,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   totalText: { fontSize: 18, fontWeight: "700", color: "#1E57A6" },
-  thanks: { textAlign: "center", marginTop: 15, fontWeight: "600" },
-
+  thanks: {
+    textAlign: "center",
+    marginTop: 15,
+    fontWeight: "600",
+    color: "#444",
+  },
   btn: {
     backgroundColor: "#F48424",
     marginTop: 20,
