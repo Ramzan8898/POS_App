@@ -1,5 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   Modal,
@@ -11,16 +11,23 @@ import {
 } from "react-native";
 
 export default function EditProfileModal({ visible, user, onClose, onSave }) {
-  const [name, setName] = useState(user.name);
-  const [password, setPassword] = useState("");
-  const [photo, setPhoto] = useState(user.photo ? user.photo : null);
+  const [name, setName] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [username, setUserName] = useState("");
+  useEffect(() => {
+    if (visible && user) {
+      setName(user.name);
+      setUserName(user.username);
+      setPhoto(user.photo);
+    }
+  }, [visible, user]);
 
   const pickImage = async () => {
-    let img = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const res = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
-    if (!img.canceled) setPhoto(img.assets[0].uri);
+    if (!res.canceled) setPhoto(res.assets[0].uri);
   };
 
   return (
@@ -48,13 +55,11 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
           <Text style={styles.label}>Full Name</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} />
 
-          <Text style={styles.label}>New Password</Text>
+          <Text style={styles.label}>User Name</Text>
           <TextInput
             style={styles.input}
-            secureTextEntry
-            placeholder="Enter new password"
-            value={password}
-            onChangeText={setPassword}
+            value={username}
+            onChangeText={setUserName}
           />
 
           <View style={styles.row}>
@@ -68,8 +73,8 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
                 onSave({
                   ...user,
                   name,
-                  image: photo,
-                  ...(password && { password }),
+                  photo, // FINAL FIX ✔
+                  username,
                 })
               }
             >
@@ -97,9 +102,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1E57A6",
-    marginBottom: 20,
     textAlign: "center",
+    color: "#1E57A6",
   },
   center: { alignItems: "center" },
   avatar: {
@@ -127,12 +131,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     borderRadius: 10,
   },
-  cancelText: { color: "#F48424", fontWeight: "700", fontSize: 16 },
+  cancelText: { color: "#F48424", fontWeight: "700" },
   saveBtn: {
     backgroundColor: "#1E57A6",
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 10,
   },
-  saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  saveText: { color: "#fff", fontWeight: "700" },
 });

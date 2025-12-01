@@ -22,9 +22,6 @@ export default function Index() {
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
 
-  // ---------------------------
-  // LOAD USER FROM STORAGE
-  // ---------------------------
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -43,21 +40,18 @@ export default function Index() {
     loadUser();
   }, []);
 
-  // ---------------------------
-  // UPDATE PROFILE API
   const updateProfile = async (updated) => {
     try {
       const token = await AsyncStorage.getItem("token");
+
       const form = new FormData();
       form.append("_method", "PUT");
       form.append("name", updated.name);
+      form.append("username", updated.username);
 
-      if (updated.password) form.append("password", updated.password);
-
-      // New Image Upload
-      if (updated.image && !updated.image.startsWith("http")) {
+      if (updated.photo && !updated.photo.startsWith("http")) {
         form.append("photo", {
-          uri: updated.image,
+          uri: updated.photo,
           type: "image/jpeg",
           name: `profile_${Date.now()}.jpg`,
         });
@@ -68,14 +62,12 @@ export default function Index() {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
-          "Content-Type": "multipart/form-data",
         },
         body: form,
       });
 
       const data = await res.json();
-
-      console.log("PROFILE UPDATE RESPONSE =>", data);
+      console.log("PROFILE UPDATE =>", data);
 
       if (data.success) {
         setUser(data.user);
@@ -83,7 +75,7 @@ export default function Index() {
         setModalVisible(false);
         Alert.alert("Success", "Profile Updated!");
       } else {
-        Alert.alert("Failed", "Update API did not return success");
+        Alert.alert("Failed", "Something went wrong");
       }
     } catch (e) {
       console.log("UPDATE ERR =>", e);
@@ -93,7 +85,7 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <View style={styles.center}>
         <ActivityIndicator size="large" color="#1E57A6" />
       </View>
     );
@@ -114,6 +106,7 @@ export default function Index() {
         />
 
         <Text style={styles.name}>{user.name}</Text>
+        <Text style={styles.name}>{user.username}</Text>
         <Text style={styles.email}>{user.email}</Text>
 
         <TouchableOpacity
@@ -136,6 +129,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   screen: { flex: 1, backgroundColor: "#f7f9fc" },
   card: {
     margin: 20,
