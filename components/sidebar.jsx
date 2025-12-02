@@ -186,50 +186,10 @@ export default function Sidebar({ isOpen, onClose }) {
               <Text style={styles.item}>Attendance</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => {
-                router.push("/roles");
-                onClose();
-              }}
-            >
-              <MaterialCommunityIcons
-                name="key-variant"
-                size={22}
-                color="#F48424"
-              />
-              <Text style={styles.item}>Roles</Text>
-            </TouchableOpacity>
+           
 
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => {
-                router.push("/users");
-                onClose();
-              }}
-            >
-              <MaterialCommunityIcons
-                name="account-circle"
-                size={22}
-                color="#F48424"
-              />
-              <Text style={styles.item}>Users</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => {
-                router.push("/databasebackup");
-                onClose();
-              }}
-            >
-              <MaterialCommunityIcons
-                name="database"
-                size={22}
-                color="#F48424"
-              />
-              <Text style={styles.item}>Database Backup</Text>
-            </TouchableOpacity>
+            
+         
 
             <TouchableOpacity style={styles.btn} onPress={logout}>
               <Text style={styles.btnText}>Logout</Text>

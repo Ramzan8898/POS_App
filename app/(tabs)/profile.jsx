@@ -22,6 +22,7 @@ export default function Index() {
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
 
+  // LOAD USER FROM ASYNC STORAGE
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -40,14 +41,16 @@ export default function Index() {
     loadUser();
   }, []);
 
+  // UPDATE PROFILE FUNCTION
   const updateProfile = async (updated) => {
     try {
       const token = await AsyncStorage.getItem("token");
 
       const form = new FormData();
-      form.append("_method", "PUT");
+      form.append("_method", "PUT"); // RN Safe Method
       form.append("name", updated.name);
       form.append("username", updated.username);
+      form.append("email", updated.email);
 
       if (updated.photo && !updated.photo.startsWith("http")) {
         form.append("photo", {
@@ -75,7 +78,7 @@ export default function Index() {
         setModalVisible(false);
         Alert.alert("Success", "Profile Updated!");
       } else {
-        Alert.alert("Failed", "Something went wrong");
+        Alert.alert("Failed", data.message || "Something went wrong");
       }
     } catch (e) {
       console.log("UPDATE ERR =>", e);
