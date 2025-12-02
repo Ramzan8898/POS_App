@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,66 +16,81 @@ import {
 } from "react-native";
 import Header from "../../components/header";
 
-const BASE_URL = "http://192.168.1.17:8000/api/products";
+const PRODUCT_URL = "http://192.168.1.17:8000/api/products";
+const CUSTOMER_URL = "http://192.168.1.17:8000/api/customers";
 
 export default function Index() {
   const router = useRouter();
 
   const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // =========================================================
+  const [customerModal, setCustomerModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  const [previousBalance, setPreviousBalance] = useState("");
+  const [taxPercent, setTaxPercent] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
+
+  // ============================
   // FETCH PRODUCTS
-  // =========================================================
+  // ============================
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch(BASE_URL, {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(PRODUCT_URL, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const json = await res.json();
-      console.log("Fetched Products:", json);
-
-      if (Array.isArray(json.Products)) {
-        setProducts(json.Products);
-      }
-    } catch (err) {
-      console.log("Fetch Products Error:", err);
+      if (Array.isArray(json.Products)) setProducts(json.Products);
+    } catch (e) {
+      console.log("Product Fetch Error:", e);
     } finally {
       setLoading(false);
     }
   };
 
+  // ============================
+  // FETCH CUSTOMERS
+  // ============================
+  const fetchCustomers = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch(CUSTOMER_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+
+      // Fix customer array key
+      setCustomers(json.customers || json.Customers || []);
+    } catch (e) {
+      console.log("Customer Fetch Error:", e);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
   }, []);
 
-  // =========================================================
-  // FILTER
-  // =========================================================
+  // PRODUCT FILTER
   const filtered = products.filter((item) =>
     item.product_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // =========================================================
-  // CART FUNCTIONS + STOCK ADJUSTMENT
-  // =========================================================
-
+  // ============================
+  // CART FUNCTIONS
+  // ============================
   const addToCart = (product) => {
     if (product.product_store <= 0) return;
 
     const exists = cart.find((p) => p.id === product.id);
-
-    if (exists) {
-      increaseQty(product.id);
-    } else {
+    if (exists) increaseQty(product.id);
+    else {
       setCart((prev) => [...prev, { ...product, qty: 1 }]);
       setProducts((prev) =>
         prev.map((p) =>
@@ -89,11 +105,8 @@ export default function Index() {
     if (!prod || prod.product_store <= 0) return;
 
     setCart((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, qty: item.qty + 1 } : item
-      )
+      prev.map((p) => (p.id === id ? { ...p, qty: p.qty + 1 } : p))
     );
-
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, product_store: p.product_store - 1 } : p
@@ -104,12 +117,9 @@ export default function Index() {
   const decreaseQty = (id) => {
     setCart((prev) =>
       prev
-        .map((item) =>
-          item.id === id && item.qty > 1 ? { ...item, qty: item.qty - 1 } : item
-        )
-        .filter((i) => i.qty > 0)
+        .map((p) => (p.id === id && p.qty > 1 ? { ...p, qty: p.qty - 1 } : p))
+        .filter((p) => p.qty > 0)
     );
-
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, product_store: p.product_store + 1 } : p
@@ -126,36 +136,53 @@ export default function Index() {
         )
       );
     }
-
-    setCart((prev) => prev.filter((i) => i.id !== id));
+    setCart((prev) => prev.filter((p) => p.id !== id));
   };
 
   const clearPOS = () => {
     setCart([]);
-    fetchProducts(); // reset stock
-    setSearch("");
+    setSelectedCustomer(null);
+    setPreviousBalance("");
+    setTaxPercent("");
+    setDiscountPercent("");
+    fetchProducts();
   };
 
-  // =========================================================
-  // BILLING
-  // =========================================================
+  // ============================
+  // BILLING CALCULATIONS
+  // ============================
   const subtotal = cart.reduce(
     (sum, item) => sum + item.selling_price * item.qty,
     0
   );
-  const tax = subtotal * 0.05;
-  const discount = subtotal * 0.02;
-  const previousBalance = 2000;
-  const total = subtotal + tax + previousBalance - discount;
 
-  // =========================================================
+  const tax = subtotal * ((taxPercent || 0) / 100);
+  const discount = subtotal * ((discountPercent || 0) / 100);
+  const total = subtotal + tax + Number(previousBalance || 0) - discount;
+
+  // ============================
+  // CUSTOMER SELECT FUNCTION
+  // ============================
+  const selectCustomer = (cust) => {
+    setSelectedCustomer(cust);
+    setPreviousBalance(cust.balance || 0); // fetch from balance column
+    setCustomerModal(false);
+  };
+
+  // ============================
   // PROCEED TO PAYMENT
-  // =========================================================
-  const proceedToPayment = () =>
+  // ============================
+  const proceedToPayment = () => {
+    if (!selectedCustomer) {
+      alert("Please select a customer first!");
+      return;
+    }
+
     router.push({
       pathname: "/pos/receipt",
       params: {
         cart: JSON.stringify(cart),
+        customer: JSON.stringify(selectedCustomer),
         subtotal,
         tax,
         discount,
@@ -163,48 +190,94 @@ export default function Index() {
         total,
       },
     });
+  };
 
-  // =========================================================
-  // UI
-  // =========================================================
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <Header title="POS" />
 
-      {/* CLEAR POS BUTTON */}
-      <TouchableOpacity style={styles.clearBtn} onPress={clearPOS}>
+      {/* RESET BUTTON */}
+      <TouchableOpacity style={styles.resetBtn} onPress={clearPOS}>
         <MaterialCommunityIcons name="delete" size={20} color="#fff" />
-        <Text style={styles.clearText}>Clear POS</Text>
+        <Text style={{ color: "#fff", marginLeft: 5, fontWeight: "700" }}>
+          Reset POS
+        </Text>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
-        {/* SEARCH */}
-        <View style={styles.searchBox}>
-          <MaterialCommunityIcons name="magnify" size={24} color="#1E57A6" />
-          <TextInput
-            placeholder="Search product..."
-            style={styles.input}
-            value={search}
-            onChangeText={setSearch}
+      <ScrollView contentContainerStyle={{ paddingBottom: 160 }}>
+        {/* CUSTOMER SELECT BOX */}
+        <TouchableOpacity
+          style={styles.customerBox}
+          onPress={() => setCustomerModal(true)}
+        >
+          <MaterialCommunityIcons
+            name="account"
+            size={24}
+            color={selectedCustomer ? "#27A55B" : "#1E57A6"}
           />
+          <Text style={styles.customerText}>
+            {selectedCustomer ? selectedCustomer.name : "Select Customer"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* CUSTOMER MODAL */}
+        <Modal visible={customerModal} animationType="slide">
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Customer</Text>
+
+            <FlatList
+              data={customers}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.customerRow}
+                  onPress={() => selectCustomer(item)}
+                >
+                  <Text style={styles.customerName}>{item.name}</Text>
+                  <Text style={styles.customerBalance}>
+                    Balance: Rs {item.balance}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+
+            <TouchableOpacity
+              style={styles.closeModal}
+              onPress={() => setCustomerModal(false)}
+            >
+              <Text style={{ color: "#fff" }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+        <View style={styles.rowHeader}>
+          <Text style={styles.sectionTitle}>Products</Text>
+
+          <View style={styles.searchSmallBox}>
+            <MaterialCommunityIcons name="magnify" size={20} color="#1E57A6" />
+            <TextInput
+              placeholder="Search..."
+              style={{ flex: 1, marginLeft: 6 }}
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Products</Text>
-
         {loading ? (
-          <ActivityIndicator size="large" color="#1E57A6" />
+          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
         ) : (
           <FlatList
             data={filtered}
             scrollEnabled={false}
-            keyExtractor={(item) => item.id.toString()} 
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity
+                disabled={item.product_store <= 0}
                 style={[
-                  styles.card,
+                  styles.productCard,
                   item.product_store <= 0 && { opacity: 0.3 },
                 ]}
-                disabled={item.product_store <= 0}
                 onPress={() => addToCart(item)}
               >
                 <Image
@@ -213,31 +286,17 @@ export default function Index() {
                       ? { uri: item.product_image }
                       : require("../../assets/images/product.webp")
                   }
-                  style={styles.image}
+                  style={styles.productImg}
                 />
-
-                <View style={styles.info}>
-                  <Text style={styles.name}>{item.product_name}</Text>
-                  <View
-                    style={{ display: "flex", flexDirection: "row", gap: 14, alignItems:"center" }}
-                  >
-                    <View
-                      style={[
-                        styles.stockBadge,
-                        item.product_store === 0 && { backgroundColor: "red" },
-                      ]}
-                    >
-                      <Text style={styles.stockText}>
-                        Stock: {item.product_store}
-                      </Text>
-                    </View>
-                    <Text style={styles.price}>Rs, {item.selling_price}</Text>
-                  </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.productName}>{item.product_name}</Text>
+                  <Text style={styles.productPrice}>
+                    Rs {item.selling_price}
+                  </Text>
                 </View>
-
                 <MaterialCommunityIcons
                   name="plus-circle"
-                  size={24}
+                  size={26}
                   color="#1E57A6"
                 />
               </TouchableOpacity>
@@ -245,8 +304,10 @@ export default function Index() {
           />
         )}
 
-        {/* CART */}
-        <Text style={styles.sectionTitle}>Selected Items</Text>
+        {/* CART ITEMS */}
+        <Text style={[styles.sectionTitle, { marginLeft: 10 }]}>
+          Selected Items
+        </Text>
 
         <FlatList
           data={cart}
@@ -256,7 +317,7 @@ export default function Index() {
             <Text style={styles.empty}>No product selected</Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.cartItem}>
+            <View style={styles.cartCard}>
               <Image
                 source={
                   item.product_image
@@ -265,34 +326,29 @@ export default function Index() {
                 }
                 style={styles.cartImg}
               />
-
               <View style={{ flex: 1 }}>
                 <Text style={styles.cartName}>{item.product_name}</Text>
                 <Text style={styles.cartPrice}>Rs {item.selling_price}</Text>
               </View>
 
-              {/* QTY CONTROLS */}
               <View style={styles.qtyArea}>
                 <TouchableOpacity
-                  style={styles.circleBtn}
+                  style={styles.qtyBtn}
                   onPress={() => decreaseQty(item.id)}
                 >
                   <MaterialCommunityIcons name="minus" size={18} />
                 </TouchableOpacity>
-
                 <Text style={styles.qty}>{item.qty}</Text>
-
                 <TouchableOpacity
-                  style={styles.circleBtn}
+                  style={styles.qtyBtn}
                   onPress={() => increaseQty(item.id)}
                 >
                   <MaterialCommunityIcons name="plus" size={18} />
                 </TouchableOpacity>
               </View>
 
-              {/* DELETE */}
               <TouchableOpacity
-                style={styles.deleteBtn}
+                style={styles.delBtn}
                 onPress={() => deleteItem(item.id)}
               >
                 <MaterialCommunityIcons name="close" size={18} color="#fff" />
@@ -301,25 +357,42 @@ export default function Index() {
           )}
         />
 
+        {/* BILL INPUTS */}
+        <View style={styles.billInputBox}>
+          <TextInput
+            keyboardType="numeric"
+            placeholder="Tax %"
+            style={styles.input}
+            value={String(taxPercent)}
+            onChangeText={setTaxPercent}
+          />
+          <TextInput
+            keyboardType="numeric"
+            placeholder="Discount %"
+            style={styles.input}
+            value={String(discountPercent)}
+            onChangeText={setDiscountPercent}
+          />
+          <TextInput
+            keyboardType="numeric"
+            placeholder="Previous Balance"
+            style={styles.input}
+            value={String(previousBalance)}
+            onChangeText={setPreviousBalance}
+          />
+        </View>
+
         {/* BILL SUMMARY */}
-        <View style={styles.billWrapper}>
-          <View style={styles.line}>
-            <Text style={styles.billLabel}>Subtotal</Text>
-            <Text style={styles.billValue}>Rs {subtotal}</Text>
-          </View>
-          <View style={styles.line}>
-            <Text style={styles.billLabel}>Tax (5%)</Text>
-            <Text style={styles.billValue}>Rs {tax}</Text>
-          </View>
-          <View style={styles.line}>
-            <Text style={styles.billLabel}>Previous Balance</Text>
-            <Text style={styles.billValue}>Rs {previousBalance}</Text>
-          </View>
-          <View style={styles.line}>
-            <Text style={styles.billLabel}>Discount (2%)</Text>
-            <Text style={styles.billValue}>- Rs {discount}</Text>
-          </View>
-          <View style={styles.totalLine}>
+        <View style={styles.billBox}>
+          <Row label="Subtotal" value={subtotal} />
+          <Row label={`Tax (${taxPercent || 0}%)`} value={tax} />
+          <Row
+            label={`Discount (${discountPercent || 0}%)`}
+            value={-discount}
+          />
+          <Row label="Previous Balance" value={previousBalance} />
+
+          <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalAmount}>Rs {total}</Text>
           </View>
@@ -328,8 +401,11 @@ export default function Index() {
 
       {/* PAYMENT BUTTON */}
       <TouchableOpacity
-        style={[styles.payBtn, { opacity: cart.length === 0 ? 0.4 : 1 }]}
-        disabled={cart.length === 0}
+        disabled={cart.length === 0 || !selectedCustomer}
+        style={[
+          styles.payBtn,
+          { opacity: cart.length === 0 || !selectedCustomer ? 0.4 : 1 },
+        ]}
         onPress={proceedToPayment}
       >
         <MaterialCommunityIcons name="credit-card" size={22} color="#fff" />
@@ -339,103 +415,142 @@ export default function Index() {
   );
 }
 
-// =========================================================
+// BILL ROW COMPONENT
+const Row = ({ label, value }) => (
+  <View style={styles.row}>
+    <Text style={{ fontSize: 15 }}>{label}</Text>
+    <Text style={{ fontWeight: "700" }}>
+      Rs {parseFloat(value || 0).toFixed(0)}
+    </Text>
+  </View>
+);
+
+// ===========================
 // STYLES
-// =========================================================
+// ===========================
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  sectionTitle: {
-    marginLeft: 12,
-    marginTop: 15,
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1E57A6",
-  },
-  clearBtn: {
+  resetBtn: {
     position: "absolute",
     top: 55,
     right: 12,
-    zIndex: 20,
-    flexDirection: "row",
     backgroundColor: "#E91E63",
+    zIndex: 99,
     padding: 6,
     borderRadius: 10,
-    alignItems: "center",
-  },
-  clearText: { color: "#fff", fontWeight: "700", marginLeft: 5 },
-
-  searchBox: {
-    marginHorizontal: 12,
-    marginTop: 10,
-    height: 50,
-    borderWidth: 2,
-    borderColor: "#1E57A6",
-    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
   },
-  input: { flex: 1, marginLeft: 8 },
 
-  card: {
-    backgroundColor: "#fff",
+  searchBox: {
+    margin: 12,
+    borderWidth: 2,
+    borderColor: "#1E57A6",
+    padding: 10,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  customerBox: {
     marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#1E57A6",
+    borderRadius: 10,
     padding: 12,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  customerText: { marginLeft: 10, fontWeight: "700", fontSize: 16 },
+
+  modalContent: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
+  customerRow: {
+    padding: 14,
+    backgroundColor: "#f7f7f7",
+    marginVertical: 4,
+    borderRadius: 10,
+  },
+  customerName: { fontWeight: "700", fontSize: 16 },
+  customerBalance: { color: "#777" },
+  closeModal: {
+    marginTop: 20,
+    backgroundColor: "#1E57A6",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  rowHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    marginTop: 12,
+  },
+
+  searchSmallBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#1E57A6",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    width: "55%", // adjust width here
+    height: 45,
+    backgroundColor: "#fff",
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#F48424",
+  },
+
+  productCard: {
+    margin: 12,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 12,
     elevation: 4,
     flexDirection: "row",
     alignItems: "center",
   },
+  productImg: { width: 50, height: 50, marginRight: 10, borderRadius: 8 },
+  productName: { fontWeight: "700" },
+  productPrice: { color: "#F48424", fontWeight: "700", marginTop: 4 },
 
-  image: { width: 55, height: 55, borderRadius: 10, marginRight: 10 },
-  info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: "700" },
-  price: { color: "#F48424", fontWeight: "600", marginTop: 3 , fontSize:16},
+  empty: { textAlign: "center", marginTop: 8, fontSize: 16 },
 
-  stockBadge: {
-    marginTop: 4,
-    backgroundColor: "#1E57A6",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  stockText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-
-  empty: { textAlign: "center", marginTop: 10 },
-
-  cartItem: {
-    backgroundColor: "#f8f8f8",
-    marginHorizontal: 12,
-    marginTop: 8,
+  cartCard: {
+    margin: 12,
+    backgroundColor: "#eee",
     padding: 10,
     borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     position: "relative",
   },
-
-  cartImg: { width: 50, height: 50, borderRadius: 10, marginRight: 10 },
-  cartName: { fontWeight: "700", fontSize: 15 },
-  cartPrice: { color: "#1E57A6" },
+  cartImg: { width: 45, height: 45, marginRight: 10, borderRadius: 8 },
+  cartName: { fontWeight: "700" },
+  cartPrice: { color: "#1E57A6", marginTop: 3 },
 
   qtyArea: { flexDirection: "row", alignItems: "center" },
-  circleBtn: {
+  qtyBtn: {
     borderWidth: 2,
     borderColor: "#1E57A6",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: "center",
     alignItems: "center",
   },
-  qty: { marginHorizontal: 10, fontSize: 16, fontWeight: "700" },
+  qty: { marginHorizontal: 8, fontWeight: "700" },
 
-  deleteBtn: {
+  delBtn: {
     position: "absolute",
-    top: -7,
-    right: -5,
+    right: -6,
+    top: -6,
     backgroundColor: "#E91E63",
     width: 22,
     height: 22,
@@ -444,22 +559,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  billWrapper: {
+  billInputBox: {
+    margin: 12,
     backgroundColor: "#fff",
-    marginHorizontal: 12,
-    marginTop: 12,
+    padding: 10,
+    borderRadius: 10,
+  },
+  input: {
+    borderWidth: 2,
+    borderColor: "#1E57A6",
+    marginVertical: 6,
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  billBox: {
+    margin: 12,
+    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 12,
     elevation: 4,
   },
-  line: {
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 4,
   },
-  billLabel: { fontSize: 15 },
-  billValue: { fontWeight: "700" },
-  totalLine: {
+
+  totalRow: {
     borderTopWidth: 1,
     borderColor: "#ccc",
     marginTop: 8,
@@ -478,8 +605,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F48424",
     padding: 14,
     borderRadius: 12,
-    justifyContent: "center",
     flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
   },
   payText: { color: "#fff", marginLeft: 8, fontWeight: "700", fontSize: 16 },
