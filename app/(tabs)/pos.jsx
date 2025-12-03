@@ -156,8 +156,8 @@ export default function Index() {
     0
   );
 
-  const tax = subtotal * ((taxPercent || 0) / 100);
-  const discount = subtotal * ((discountPercent || 0) / 100);
+  const tax = Number(taxPercent) || 0;
+  const discount = Number(discountPercent) || 0;
   const total = subtotal + tax + Number(previousBalance || 0) - discount;
 
   // ============================
@@ -251,7 +251,7 @@ export default function Index() {
         </Modal>
 
         <View style={styles.rowHeader}>
-          <Text style={styles.sectionTitle}>Products</Text>
+          <Text style={styles.ProductTitle}>Products</Text>
 
           <View style={styles.searchSmallBox}>
             <MaterialCommunityIcons name="magnify" size={20} color="#1E57A6" />
@@ -305,9 +305,16 @@ export default function Index() {
         )}
 
         {/* CART ITEMS */}
-        <Text style={[styles.sectionTitle, { marginLeft: 10 }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { marginLeft: 10 },
+            cart.length === 0 && { display: "none" },
+          ]}
+        >
           Selected Items
         </Text>
+
 
         <FlatList
           data={cart}
@@ -361,14 +368,14 @@ export default function Index() {
         <View style={styles.billInputBox}>
           <TextInput
             keyboardType="numeric"
-            placeholder="Tax %"
+            placeholder="Tax "
             style={styles.input}
             value={String(taxPercent)}
             onChangeText={setTaxPercent}
           />
           <TextInput
             keyboardType="numeric"
-            placeholder="Discount %"
+            placeholder="Discount"
             style={styles.input}
             value={String(discountPercent)}
             onChangeText={setDiscountPercent}
@@ -379,15 +386,16 @@ export default function Index() {
             style={styles.input}
             value={String(previousBalance)}
             onChangeText={setPreviousBalance}
+            editable={false}
           />
         </View>
 
         {/* BILL SUMMARY */}
         <View style={styles.billBox}>
           <Row label="Subtotal" value={subtotal} />
-          <Row label={`Tax (${taxPercent || 0}%)`} value={tax} />
+          <Row label="Tax" value={tax} />
           <Row
-            label={`Discount (${discountPercent || 0}%)`}
+            label="Dicsount"
             value={-discount}
           />
           <Row label="Previous Balance" value={previousBalance} />
@@ -404,7 +412,7 @@ export default function Index() {
         disabled={cart.length === 0 || !selectedCustomer}
         style={[
           styles.payBtn,
-          { opacity: cart.length === 0 || !selectedCustomer ? 0.4 : 1 },
+          (cart.length === 0 || !selectedCustomer) && { display: "none" },
         ]}
         onPress={proceedToPayment}
       >
@@ -486,7 +494,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 12,
-    marginTop: 12,
+    marginVertical: 12,
   },
 
   searchSmallBox: {
@@ -502,13 +510,24 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#F48424",
+    textAlign: 'center',
+    marginVertical: 10
+  },
+
+  ProductTitle: {
     fontSize: 22,
     fontWeight: "700",
     color: "#F48424",
+    textAlign: 'center',
+    marginVertical: 10
   },
 
   productCard: {
-    margin: 12,
+    marginHorizontal: 12,
+    marginBottom: 8,
     backgroundColor: "#fff",
     padding: 10,
     borderRadius: 12,
@@ -524,7 +543,7 @@ const styles = StyleSheet.create({
 
   cartCard: {
     margin: 12,
-    backgroundColor: "#eee",
+    backgroundColor: "#eae4e4ff",
     padding: 10,
     borderRadius: 12,
     flexDirection: "row",

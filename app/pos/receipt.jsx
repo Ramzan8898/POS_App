@@ -55,14 +55,18 @@ export default function Receipt() {
         <View style={styles.container}>
           <ViewShot ref={shotRef} options={{ format: "png", quality: 1 }}>
             <View style={styles.receiptBox}>
-              <Text style={styles.header}>Customer Receipt</Text>
+              <View style={styles.headingBox}>
+                <Text style={[styles.headerName, styles.header]}> Item</Text>
+                <Text style={[styles.headerQty, styles.header]}> Qty</Text>
+                <Text style={[styles.headerPrice, styles.header]}> Price</Text>
+              </View>
 
               {cart.map((item) => (
                 <View key={item.id} style={styles.row}>
                   <Text style={styles.name}>{item.product_name}</Text>
-                  <Text style={styles.qty}>{item.qty}x</Text>
+                  <Text style={styles.qty}>{item.qty}</Text>
                   <Text style={styles.price}>
-                    Rs {item.selling_price * item.qty}
+                    {item.selling_price * item.qty}
                   </Text>
                 </View>
               ))}
@@ -71,16 +75,16 @@ export default function Receipt() {
 
               <View style={styles.summary}>
                 <Text>Subtotal</Text>
-                <Text>Rs {subtotal}</Text>
+                <Text style={{ fontWeight: 900 }}>Rs: {subtotal}</Text>
               </View>
 
               <View style={styles.summary}>
-                <Text>Tax (5%)</Text>
+                <Text>Tax</Text>
                 <Text>Rs {tax}</Text>
               </View>
 
               <View style={styles.summary}>
-                <Text>Discount (2%)</Text>
+                <Text>Discount</Text>
                 <Text>- Rs {discount}</Text>
               </View>
 
@@ -90,7 +94,7 @@ export default function Receipt() {
               </View>
 
               <View style={styles.totalRow}>
-                <Text style={styles.totalText}>Final Total</Text>
+                <Text style={styles.totalText}> Total</Text>
                 <Text style={styles.totalText}>Rs {total}</Text>
               </View>
 
@@ -124,25 +128,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 4,
   },
+  headingBox: {
+    display: "flex",
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
   header: {
-    textAlign: "center",
-    fontSize: 22,
     fontWeight: "700",
     marginBottom: 20,
     color: "#1E57A6",
   },
+  headerQty: {
+    textAlign: 'right',
+    flex: 0.6
+  },
+
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 6,
   },
   name: { fontSize: 16, flex: 1 },
-  qty: { width: 40, textAlign: "center" },
+  qty: { textAlign: "left" },
   price: { width: 90, textAlign: "right", fontWeight: "700" },
   line: {
-    height: 1,
-    backgroundColor: "#ddd",
     marginVertical: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#ddd'
   },
   summary: {
     flexDirection: "row",
@@ -154,6 +167,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
     borderTopWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
     paddingTop: 10,
   },
   totalText: { fontSize: 18, fontWeight: "700", color: "#1E57A6" },
