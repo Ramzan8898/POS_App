@@ -9,58 +9,59 @@ const BASE_URL = "http://192.168.1.17:8000";
 
 export default function Index() {
   const router = useRouter();
+
   const [productCount, setProductCount] = useState(0);
   const [employeeCount, setEmployeeCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [customerCount, setCustomerCount] = useState(0);
+  const [ordersCount, setOrderCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const getLength = (obj, keys) => {
+    for (let k of keys) {
+      if (obj[k] && Array.isArray(obj[k])) return obj[k].length;
+    }
+    return 0;
+  };
 
   const loadDashboard = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      };
 
       // PRODUCTS
-      const productsRes = await fetch(`${BASE_URL}/api/products`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
-
+      const productsRes = await fetch(`${BASE_URL}/api/products`, { headers });
       const productsData = await productsRes.json();
-      if (productsData.products && Array.isArray(productsData.products)) {
-        setProductCount(productsData.products.length);
-      }
+      setProductCount(
+        getLength(productsData, ["products", "Products", "data", "items"])
+      );
+
+      // ORDERS
+      const ordersRes = await fetch(`${BASE_URL}/api/orders`, { headers });
+      const ordersData = await ordersRes.json();
+      setOrderCount(
+        getLength(ordersData, ["orders", "Orders", "data", "items"])
+      );
 
       // EMPLOYEES
       const employeesRes = await fetch(`${BASE_URL}/api/employees`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+        headers,
       });
-
       const employeesData = await employeesRes.json();
-      if (employeesData.Employees && Array.isArray(employeesData.Employees)) {
-        setEmployeeCount(employeesData.Employees.length);
-      }
+      setEmployeeCount(
+        getLength(employeesData, ["employees", "Employees", "data", "items"])
+      );
 
-      // CUSTOMERS 🚀 (NEW BLOCK)
+      // CUSTOMERS
       const customersRes = await fetch(`${BASE_URL}/api/customers`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+        headers,
       });
-
       const customersData = await customersRes.json();
-      console.log("CUSTOMERS:", customersData);
-
-      if (customersData.Customers && Array.isArray(customersData.Customers)) {
-        setCustomerCount(customersData.Customers.length);
-      }
+      setCustomerCount(
+        getLength(customersData, ["customers", "Customers", "data", "items"])
+      );
     } catch (err) {
       console.log("Dashboard Fetch Error:", err);
     } finally {
@@ -94,12 +95,14 @@ export default function Index() {
           />
         </Pressable>
 
-        <Cards
-          title="Total Orders"
-          icon="basket-fill"
-          count={1250}
-          progress={78}
-        />
+        <Pressable onPress={() => router.push("/orders")}>
+          <Cards
+            title="Total Orders"
+            icon="basket-fill"
+            count={ordersCount}
+            progress={78}
+          />
+        </Pressable>
 
         <Pressable onPress={() => router.push("/employees")}>
           <Cards
@@ -109,6 +112,7 @@ export default function Index() {
             progress={92}
           />
         </Pressable>
+
         <Pressable onPress={() => router.push("/customers")}>
           <Cards
             title="Customers"

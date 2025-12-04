@@ -31,9 +31,10 @@ export default function Index() {
   const [customerModal, setCustomerModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  const [previousBalance, setPreviousBalance] = useState("");
+  const [previousBalance, setPreviousBalance] = useState(0);
   const [taxPercent, setTaxPercent] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
+  const [paidAmount, setPaidAmount] = useState("");
 
   // ============================
   // FETCH PRODUCTS
@@ -46,9 +47,10 @@ export default function Index() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
-      if (Array.isArray(json.Products)) setProducts(json.Products);
+      setProducts(Array.isArray(json) ? json : json.Products ?? []);
     } catch (e) {
       console.log("Product Fetch Error:", e);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -63,12 +65,20 @@ export default function Index() {
       const res = await fetch(CUSTOMER_URL, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = await res.json();
 
-      // Fix customer array key
-      setCustomers(json.customers || json.Customers || []);
+      const json = await res.json();
+      console.log("CUSTOMER API RESPONSE:", json); // 🟢 DEBUG LINE
+
+      const list =
+        json.customers ||
+        json.Customers ||
+        json.data ||
+        (Array.isArray(json) ? json : []);
+
+      setCustomers(list);
     } catch (e) {
       console.log("Customer Fetch Error:", e);
+      setCustomers([]);
     }
   };
 
@@ -77,14 +87,12 @@ export default function Index() {
     fetchCustomers();
   }, []);
 
-  // PRODUCT FILTER
+  // FILTER PRODUCTS
   const filtered = products.filter((item) =>
     item.product_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ============================
   // CART FUNCTIONS
-  // ============================
   const addToCart = (product) => {
     if (product.product_store <= 0) return;
 
@@ -107,6 +115,7 @@ export default function Index() {
     setCart((prev) =>
       prev.map((p) => (p.id === id ? { ...p, qty: p.qty + 1 } : p))
     );
+
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, product_store: p.product_store - 1 } : p
@@ -120,6 +129,7 @@ export default function Index() {
         .map((p) => (p.id === id && p.qty > 1 ? { ...p, qty: p.qty - 1 } : p))
         .filter((p) => p.qty > 0)
     );
+
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, product_store: p.product_store + 1 } : p
@@ -142,54 +152,107 @@ export default function Index() {
   const clearPOS = () => {
     setCart([]);
     setSelectedCustomer(null);
-    setPreviousBalance("");
+    setPaidAmount("");
+    setPreviousBalance(0);
     setTaxPercent("");
     setDiscountPercent("");
     fetchProducts();
   };
 
   // ============================
-  // BILLING CALCULATIONS
+  // BILL CALCULATIONS
   // ============================
+  // ============================
+  // BILL CALCULATIONS (FIXED)
+  // ============================
+
   const subtotal = cart.reduce(
     (sum, item) => sum + item.selling_price * item.qty,
     0
   );
-
   const tax = Number(taxPercent) || 0;
   const discount = Number(discountPercent) || 0;
-  const total = subtotal + tax + Number(previousBalance || 0) - discount;
 
-  // ============================
-  // CUSTOMER SELECT FUNCTION
-  // ============================
+  const billTotal = subtotal + tax - discount; // ❌ PREVIOUS BALANCE NOT INCLUDED HERE
+
+  const paid = Number(paidAmount) || 0;
+
+  // ✔️ Correct due calculation
+  const due = billTotal - paid + previousBalance;
+
+  // SELECT CUSTOMER
   const selectCustomer = (cust) => {
     setSelectedCustomer(cust);
-    setPreviousBalance(cust.balance || 0); // fetch from balance column
+    setPreviousBalance(Number(cust.balance || 0));
     setCustomerModal(false);
   };
 
   // ============================
   // PROCEED TO PAYMENT
   // ============================
-  const proceedToPayment = () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer first!");
-      return;
-    }
+  const proceedToPayment = async () => {
+    if (!selectedCustomer) return alert("Select customer first!");
+    if (cart.length === 0) return alert("Cart is empty!");
 
-    router.push({
-      pathname: "/pos/receipt",
-      params: {
-        cart: JSON.stringify(cart),
-        customer: JSON.stringify(selectedCustomer),
+    try {
+      const token = await AsyncStorage.getItem("token");
+
+      const payload = {
+        customer_id: selectedCustomer.id,
+        payment_status: paid >= billTotal ? "complete" : "pending",
         subtotal,
         tax,
         discount,
-        previousBalance,
-        total,
-      },
-    });
+        previous_balance: previousBalance,
+        total: billTotal,
+        total_products: cart.reduce((s, p) => s + p.qty, 0),
+        cart_items: cart.map((item) => ({
+          id: item.id,
+          qty: item.qty,
+          price: item.selling_price,
+          total: item.qty * item.selling_price,
+        })),
+        pay: paid,
+        due: due,
+      };
+
+      const res = await fetch("http://192.168.1.17:8000/api/orders/store", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      console.log(json);
+
+      if (json.success) {
+        alert("Order Submitted Successfully!");
+        clearPOS();
+
+        router.push({
+          pathname: "/pos/receipt",
+          params: {
+            order_id: json.order_id,
+            subtotal,
+            tax,
+            discount,
+            previousBalance,
+            paid,
+            due,
+            total: billTotal,
+            cart: JSON.stringify(cart),
+          },
+        });
+
+        setTimeout(() => clearPOS(), 500);
+      }
+    } catch (e) {
+      console.log("Order Store Error:", e);
+      alert("Order failed");
+    }
   };
 
   return (
@@ -205,7 +268,7 @@ export default function Index() {
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 160 }}>
-        {/* CUSTOMER SELECT BOX */}
+        {/* CUSTOMER SELECT */}
         <TouchableOpacity
           style={styles.customerBox}
           onPress={() => setCustomerModal(true)}
@@ -220,7 +283,7 @@ export default function Index() {
           </Text>
         </TouchableOpacity>
 
-        {/* CUSTOMER MODAL */}
+        {/* MODAL */}
         <Modal visible={customerModal} animationType="slide">
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Customer</Text>
@@ -235,7 +298,7 @@ export default function Index() {
                 >
                   <Text style={styles.customerName}>{item.name}</Text>
                   <Text style={styles.customerBalance}>
-                    Balance: Rs {item.balance}
+                    Udhaar: Rs {item.balance}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -250,6 +313,7 @@ export default function Index() {
           </View>
         </Modal>
 
+        {/* SEARCH */}
         <View style={styles.rowHeader}>
           <Text style={styles.ProductTitle}>Products</Text>
 
@@ -264,6 +328,7 @@ export default function Index() {
           </View>
         </View>
 
+        {/* PRODUCT LIST */}
         {loading ? (
           <ActivityIndicator size="large" style={{ marginTop: 20 }} />
         ) : (
@@ -288,12 +353,14 @@ export default function Index() {
                   }
                   style={styles.productImg}
                 />
+
                 <View style={{ flex: 1 }}>
                   <Text style={styles.productName}>{item.product_name}</Text>
                   <Text style={styles.productPrice}>
                     Rs {item.selling_price}
                   </Text>
                 </View>
+
                 <MaterialCommunityIcons
                   name="plus-circle"
                   size={26}
@@ -304,18 +371,12 @@ export default function Index() {
           />
         )}
 
-        {/* CART ITEMS */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            { marginLeft: 10 },
-            cart.length === 0 && { display: "none" },
-          ]}
-        >
-          Selected Items
-        </Text>
+        {/* CART TITLE */}
+        {cart.length > 0 && (
+          <Text style={styles.sectionTitle}>Selected Items</Text>
+        )}
 
-
+        {/* CART */}
         <FlatList
           data={cart}
           scrollEnabled={false}
@@ -333,6 +394,7 @@ export default function Index() {
                 }
                 style={styles.cartImg}
               />
+
               <View style={{ flex: 1 }}>
                 <Text style={styles.cartName}>{item.product_name}</Text>
                 <Text style={styles.cartPrice}>Rs {item.selling_price}</Text>
@@ -345,7 +407,9 @@ export default function Index() {
                 >
                   <MaterialCommunityIcons name="minus" size={18} />
                 </TouchableOpacity>
+
                 <Text style={styles.qty}>{item.qty}</Text>
+
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={() => increaseQty(item.id)}
@@ -364,15 +428,16 @@ export default function Index() {
           )}
         />
 
-        {/* BILL INPUTS */}
+        {/* BILL FORM */}
         <View style={styles.billInputBox}>
           <TextInput
             keyboardType="numeric"
-            placeholder="Tax "
+            placeholder="Tax"
             style={styles.input}
             value={String(taxPercent)}
             onChangeText={setTaxPercent}
           />
+
           <TextInput
             keyboardType="numeric"
             placeholder="Discount"
@@ -380,13 +445,21 @@ export default function Index() {
             value={String(discountPercent)}
             onChangeText={setDiscountPercent}
           />
+
           <TextInput
             keyboardType="numeric"
             placeholder="Previous Balance"
             style={styles.input}
             value={String(previousBalance)}
-            onChangeText={setPreviousBalance}
             editable={false}
+          />
+
+          <TextInput
+            keyboardType="numeric"
+            placeholder="Paid Amount"
+            style={[styles.input, { borderColor: "#27A55B" }]}
+            value={String(paidAmount)}
+            onChangeText={setPaidAmount}
           />
         </View>
 
@@ -394,36 +467,29 @@ export default function Index() {
         <View style={styles.billBox}>
           <Row label="Subtotal" value={subtotal} />
           <Row label="Tax" value={tax} />
-          <Row
-            label="Dicsount"
-            value={-discount}
-          />
+          <Row label="Discount" value={-discount} />
           <Row label="Previous Balance" value={previousBalance} />
+          <Row label="Paid Now" value={paid} />
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalAmount}>Rs {total}</Text>
+            <Text style={styles.totalLabel}>Due (Udhaar)</Text>
+            <Text style={styles.totalAmount}>Rs {due}</Text>
           </View>
         </View>
       </ScrollView>
 
       {/* PAYMENT BUTTON */}
-      <TouchableOpacity
-        disabled={cart.length === 0 || !selectedCustomer}
-        style={[
-          styles.payBtn,
-          (cart.length === 0 || !selectedCustomer) && { display: "none" },
-        ]}
-        onPress={proceedToPayment}
-      >
-        <MaterialCommunityIcons name="credit-card" size={22} color="#fff" />
-        <Text style={styles.payText}>Proceed to Payment</Text>
-      </TouchableOpacity>
+      {cart.length > 0 && selectedCustomer && (
+        <TouchableOpacity style={styles.payBtn} onPress={proceedToPayment}>
+          <MaterialCommunityIcons name="credit-card" size={22} color="#fff" />
+          <Text style={styles.payText}>Proceed to Payment</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-// BILL ROW COMPONENT
+// ROW COMPONENT
 const Row = ({ label, value }) => (
   <View style={styles.row}>
     <Text style={{ fontSize: 15 }}>{label}</Text>
@@ -433,9 +499,7 @@ const Row = ({ label, value }) => (
   </View>
 );
 
-// ===========================
 // STYLES
-// ===========================
 const styles = StyleSheet.create({
   resetBtn: {
     position: "absolute",
@@ -448,17 +512,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-
-  searchBox: {
-    margin: 12,
-    borderWidth: 2,
-    borderColor: "#1E57A6",
-    padding: 10,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
   customerBox: {
     marginHorizontal: 12,
     borderWidth: 2,
@@ -470,7 +523,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   customerText: { marginLeft: 10, fontWeight: "700", fontSize: 16 },
-
   modalContent: { flex: 1, padding: 20, backgroundColor: "#fff" },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
   customerRow: {
@@ -488,7 +540,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-
   rowHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -496,7 +547,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginVertical: 12,
   },
-
   searchSmallBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -504,27 +554,24 @@ const styles = StyleSheet.create({
     borderColor: "#1E57A6",
     borderRadius: 10,
     paddingHorizontal: 10,
-    width: "55%", // adjust width here
+    width: "55%",
     height: 45,
     backgroundColor: "#fff",
   },
-
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#F48424",
-    textAlign: 'center',
-    marginVertical: 10
+    textAlign: "center",
+    marginVertical: 10,
   },
-
   ProductTitle: {
     fontSize: 22,
     fontWeight: "700",
     color: "#F48424",
-    textAlign: 'center',
-    marginVertical: 10
+    textAlign: "center",
+    marginVertical: 10,
   },
-
   productCard: {
     marginHorizontal: 12,
     marginBottom: 8,
@@ -538,12 +585,10 @@ const styles = StyleSheet.create({
   productImg: { width: 50, height: 50, marginRight: 10, borderRadius: 8 },
   productName: { fontWeight: "700" },
   productPrice: { color: "#F48424", fontWeight: "700", marginTop: 4 },
-
   empty: { textAlign: "center", marginTop: 8, fontSize: 16 },
-
   cartCard: {
     margin: 12,
-    backgroundColor: "#eae4e4ff",
+    backgroundColor: "#eee",
     padding: 10,
     borderRadius: 12,
     flexDirection: "row",
@@ -553,7 +598,6 @@ const styles = StyleSheet.create({
   cartImg: { width: 45, height: 45, marginRight: 10, borderRadius: 8 },
   cartName: { fontWeight: "700" },
   cartPrice: { color: "#1E57A6", marginTop: 3 },
-
   qtyArea: { flexDirection: "row", alignItems: "center" },
   qtyBtn: {
     borderWidth: 2,
@@ -565,7 +609,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   qty: { marginHorizontal: 8, fontWeight: "700" },
-
   delBtn: {
     position: "absolute",
     right: -6,
@@ -577,7 +620,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   billInputBox: {
     margin: 12,
     backgroundColor: "#fff",
@@ -591,7 +633,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
   },
-
   billBox: {
     margin: 12,
     backgroundColor: "#fff",
@@ -604,7 +645,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginVertical: 4,
   },
-
   totalRow: {
     borderTopWidth: 1,
     borderColor: "#ccc",
@@ -615,7 +655,6 @@ const styles = StyleSheet.create({
   },
   totalLabel: { color: "#1E57A6", fontSize: 18, fontWeight: "700" },
   totalAmount: { color: "#1E57A6", fontSize: 18, fontWeight: "700" },
-
   payBtn: {
     position: "absolute",
     bottom: 100,
