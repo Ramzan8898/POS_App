@@ -31,7 +31,7 @@ export default function Login() {
       console.log("LOGIN RESPONSE =>", data);
 
       if (data.token) {
-        await AsyncStorage.setItem("token", data.token); // ✅ FIXED
+        await AsyncStorage.setItem("token", data.token);
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
         router.push("(tabs)");

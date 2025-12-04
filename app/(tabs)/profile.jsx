@@ -41,7 +41,6 @@ export default function Index() {
     loadUser();
   }, []);
 
-  // UPDATE PROFILE FUNCTION
   const updateProfile = async (updated) => {
     try {
       const token = await AsyncStorage.getItem("token");

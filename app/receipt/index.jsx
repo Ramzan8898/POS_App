@@ -1,10 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -44,6 +47,32 @@ export default function Receipt() {
     }
   };
 
+  const [company, setCompany] = useState(null);
+
+  const fetchCompany = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch("http://192.168.1.17:8000/api/company", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json();
+      const c =
+        json.company ||
+        json.Company ||
+        json.data ||
+        (Array.isArray(json) ? json[0] : null);
+      console.log("Image cmpany", c);
+      if (c) setCompany(c);
+    } catch (e) {
+      console.log("COMPANY FETCH ERROR:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompany(); // 👈 IMPORTANT
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <Header title="Receipt" />
@@ -53,16 +82,29 @@ export default function Receipt() {
           <ViewShot ref={shotRef} options={{ format: "png", quality: 1 }}>
             <View style={styles.receiptBox}>
               {/* HEADER */}
-              <Text style={styles.companyName}>ChoiceShopz</Text>
-              <Text style={styles.companyInfo}>University Road, Sargodha</Text>
-              <Text style={styles.companyInfo}>Phone: 0300-0000000</Text>
+              {company && (
+                <View style={{ alignItems: "center", marginBottom: 15 }}>
+                  {company.logo && (
+                    <Image
+                      source={{
+                        uri: `http://192.168.1.17:8000/storage/${company.logo}`,
+                      }}
+                      style={{ width: 80, height: 80, resizeMode: "contain" }}
+                    />
+                  )}
+
+                  <Text style={styles.companyName}>{company.name}</Text>
+                  <Text style={styles.companyInfo}>{company.address}</Text>
+                  <Text style={styles.companyInfo}>Phone: {company.phone}</Text>
+                </View>
+              )}
 
               <Text style={styles.invoiceTitle}>INVOICE</Text>
 
               {/* DETAILS */}
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Invoice No</Text>
-                <Text style={styles.value}>#{params.order_id}</Text>
+                <Text style={styles.value}>#{params.invoice}</Text>
               </View>
 
               <View style={styles.infoRow}>
@@ -99,7 +141,6 @@ export default function Receipt() {
                   </Text>
                   <Text style={styles.col2}>{item.qty ?? item.quantity}</Text>
                   <Text style={styles.col3}>
-                    
                     {(item.qty ?? item.quantity) *
                       (item.product.selling_price ?? item.price)}
                   </Text>
@@ -123,7 +164,6 @@ export default function Receipt() {
                 <Text>Discount</Text>
                 <Text>- Rs {discount}</Text>
               </View>
-
 
               <View style={styles.row}>
                 <Text> Paid</Text>
@@ -170,6 +210,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 4,
   },
+  companyName: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1E57A6",
+    marginTop: 6,
+  },
+
+  companyInfo: {
+    fontSize: 14,
+    color: "#444",
+    marginTop: 2,
+  },
 
   companyName: {
     fontSize: 22,
@@ -199,8 +251,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderBottomWidth: 1,
     paddingBottom: 6,
-    borderStyle:'dashed',
-    borderColor:"#1E57A6"
+    borderStyle: "dashed",
+    borderColor: "#1E57A6",
   },
   tableTxt: { fontWeight: "700", color: "#1E57A6" },
   tableRow: { flexDirection: "row", marginVertical: 6 },
@@ -209,7 +261,12 @@ const styles = StyleSheet.create({
   col2: { flex: 1, textAlign: "center" },
   col3: { flex: 1, textAlign: "right", fontWeight: "700" },
 
-  line: { marginVertical: 10, borderTopWidth: 1, borderColor: "#1E57A6", borderStyle:"dashed" },
+  line: {
+    marginVertical: 10,
+    borderTopWidth: 1,
+    borderColor: "#1E57A6",
+    borderStyle: "dashed",
+  },
 
   row: {
     flexDirection: "row",
