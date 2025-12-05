@@ -233,7 +233,7 @@ export default function Index() {
         clearPOS();
 
         router.push({
-          pathname: "/pos/receipt",
+          pathname: "/receipt",
           params: {
             order_id: json.order_id,
             subtotal,

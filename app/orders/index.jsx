@@ -80,7 +80,7 @@ export default function Orders() {
         subtotal: order.subtotal ?? order.total,
         cart: JSON.stringify(products),
         balance: order.customer?.balance ?? 0,
-        invoice:order.invoice_no
+        invoice: order.invoice_no,
       },
     });
   };
@@ -139,8 +139,40 @@ export default function Orders() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <View style={{ flex: 1, backgroundColor: "#fff", position:'relative' }}>
       <Header title="Orders" />
+
+      <View
+        style={{
+          position: "absolute",
+          bottom: 60,
+          left: 0,
+          right: 0,
+          paddingHorizontal: 20,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => router.push("/pos")}
+          activeOpacity={0.7}
+          style={{
+            borderWidth: 2,
+            borderColor: "#1E57A6",
+            paddingVertical: 14,
+            borderRadius: 12,
+            alignItems: "center",
+            backgroundColor: "#ffffff", // overlay visible
+            elevation: 5, // Android shadow
+            shadowColor: "#000",
+            shadowOpacity: 0.2,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 5,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#1E57A6" }}>
+            Create New Order
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* SEARCH BOX */}
       <TextInput
