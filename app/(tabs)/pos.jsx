@@ -226,32 +226,50 @@ export default function Index() {
       });
 
       const json = await res.json();
-      console.log(json);
+      console.log("ORDER RESPONSE:", json);
 
-      if (json.success) {
-        alert("Order Submitted Successfully!");
-        clearPOS();
-
-        router.push({
-          pathname: "/receipt",
-          params: {
-            order_id: json.order_id,
-            subtotal,
-            tax,
-            discount,
-            previousBalance,
-            paid,
-            due,
-            total: billTotal,
-            cart: JSON.stringify(cart),
-          },
-        });
-
-        setTimeout(() => clearPOS(), 500);
+      if (!json.success) {
+        alert(json.message || "Order failed!");
+        return;
       }
+
+      alert("Order Submitted Successfully!");
+
+      // 🔥 PUSH RECEIPT SCREEN WITH CORRECT PARAMS
+      router.push({
+        pathname: "/receipt",
+        params: {
+          order_id: json.order_id,
+          total: billTotal,
+          paid: paid,
+          due: due,
+          customer: selectedCustomer?.name ?? "Walk-in Customer",
+          date: new Date().toISOString().slice(0, 10),
+          status: paid >= billTotal ? "complete" : "pending",
+          previousBalance: previousBalance,
+          discount: discount,
+          tax: tax,
+          subtotal: subtotal,
+          balance: selectedCustomer?.balance ?? 0,
+
+          // 👇 Correct invoice reference
+          invoice: json.Order.invoice_no,
+
+          cart: JSON.stringify(
+            cart.map((item) => ({
+              name: item.product_name,
+              qty: item.qty,
+              price: item.selling_price,
+              total: item.selling_price * item.qty,
+            }))
+          ),
+        },
+      });
+
+      setTimeout(() => clearPOS(), 400);
     } catch (e) {
-      console.log("Order Store Error:", e);
-      alert("Order failed");
+      console.log("ORDER STORE ERROR:", e);
+      alert("Order failed, try again!");
     }
   };
 

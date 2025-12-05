@@ -22,7 +22,6 @@ export default function Index() {
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
 
-  // LOAD USER FROM ASYNC STORAGE
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -41,12 +40,15 @@ export default function Index() {
     loadUser();
   }, []);
 
+  // ===========================
+  // UPDATE PROFILE FUNCTION
+  // ===========================
   const updateProfile = async (updated) => {
     try {
       const token = await AsyncStorage.getItem("token");
 
       const form = new FormData();
-      form.append("_method", "PUT"); // RN Safe Method
+      form.append("method", "POST");
       form.append("name", updated.name);
       form.append("username", updated.username);
       form.append("email", updated.email);
@@ -69,19 +71,28 @@ export default function Index() {
       });
 
       const data = await res.json();
-      console.log("PROFILE UPDATE =>", data);
+      console.log("PROFILE API RESPONSE =>", data); // 👈 ADD THIS LOG
 
-      if (data.success) {
-        setUser(data.user);
-        await AsyncStorage.setItem("user", JSON.stringify(data.user));
-        setModalVisible(false);
-        Alert.alert("Success", "Profile Updated!");
-      } else {
-        Alert.alert("Failed", data.message || "Something went wrong");
+      if (!data.success) {
+        Alert.alert("Update Failed", data.message ?? "Server error");
+        return false; // 👈 important
       }
+
+      const updatedUser = data.user; // 👈 FIX — your API returns {success, message, user}
+
+      if (!updatedUser) {
+        Alert.alert("Error", "User not returned from server");
+        return false;
+      }
+
+      setUser(updatedUser);
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+
+      return true; // 👈 indicate success
     } catch (e) {
       console.log("UPDATE ERR =>", e);
       Alert.alert("Error", "Unable to update profile");
+      return false;
     }
   };
 

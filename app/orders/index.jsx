@@ -9,7 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import Header from "../../components/header";
 
@@ -95,11 +95,12 @@ export default function Orders() {
       [];
 
     router.push({
-      pathname: "/(tabs)/pos", // 👈 GOES TO POS TAB
+      pathname: "/(tabs)/pos",
       params: {
         edit: "true",
         order_id: order.id,
         customer_id: order.customer_id,
+        customer_balance: order.customer.balance,
         subtotal: order.subtotal,
         discount: order.discount,
         tax: order.tax,
@@ -139,7 +140,7 @@ export default function Orders() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff", position:'relative' }}>
+    <View style={{ flex: 1, backgroundColor: "#fff", position: "relative" }}>
       <Header title="Orders" />
 
       <View
@@ -149,26 +150,27 @@ export default function Orders() {
           left: 0,
           right: 0,
           paddingHorizontal: 20,
+          zIndex:999
         }}
       >
         <TouchableOpacity
-          onPress={() => router.push("/pos")}
-          activeOpacity={0.7}
-          style={{
-            borderWidth: 2,
-            borderColor: "#1E57A6",
-            paddingVertical: 14,
-            borderRadius: 12,
-            alignItems: "center",
-            backgroundColor: "#ffffff", // overlay visible
-            elevation: 5, // Android shadow
-            shadowColor: "#000",
-            shadowOpacity: 0.2,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 5,
+          onPress={() => {
+            console.log("Pressed");
+            router.push("/pos");
           }}
+          style={{
+            backgroundColor: "#1E57A6",
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 10,
+            alignItems: "center",
+            elevation:1
+          
+            
+          }}
+          activeOpacity={0.7}
         >
-          <Text style={{ fontSize: 18, fontWeight: "700", color: "#1E57A6" }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>
             Create New Order
           </Text>
         </TouchableOpacity>

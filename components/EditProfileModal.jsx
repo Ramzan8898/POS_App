@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Modal,
   StyleSheet,
@@ -12,12 +13,16 @@ import {
 
 export default function EditProfileModal({ visible, user, onClose, onSave }) {
   const [name, setName] = useState("");
-  const [photo, setPhoto] = useState(null);
   const [username, setUserName] = useState("");
+  const [email, setEmail] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     if (visible && user) {
       setName(user.name);
       setUserName(user.username);
+      setEmail(user.email); // 🔥 REQUIRED
       setPhoto(user.photo);
     }
   }, [visible, user]);
@@ -28,6 +33,14 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
     if (!res.canceled) setPhoto(res.assets[0].uri);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const ok = await onSave({ name, username, email, photo });
+    setSaving(false);
+
+    if (ok) onClose(); // CLOSE MODAL AFTER SUCCESS
   };
 
   return (
@@ -55,11 +68,19 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
           <Text style={styles.label}>Full Name</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} />
 
-          <Text style={styles.label}>User Name</Text>
+          <Text style={styles.label}>Username</Text>
           <TextInput
             style={styles.input}
             value={username}
             onChangeText={setUserName}
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
           />
 
           <View style={styles.row}>
@@ -69,16 +90,14 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
 
             <TouchableOpacity
               style={styles.saveBtn}
-              onPress={() =>
-                onSave({
-                  ...user,
-                  name,
-                  photo, // FINAL FIX ✔
-                  username,
-                })
-              }
+              disabled={saving}
+              onPress={handleSave}
             >
-              <Text style={styles.saveText}>Save</Text>
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveText}>Save</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
