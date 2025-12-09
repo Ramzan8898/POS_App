@@ -40,19 +40,14 @@ export default function Index() {
     loadUser();
   }, []);
 
-  // ===========================
-  // UPDATE PROFILE FUNCTION
-  // ===========================
   const updateProfile = async (updated) => {
     try {
       const token = await AsyncStorage.getItem("token");
-
       const form = new FormData();
       form.append("method", "POST");
       form.append("name", updated.name);
       form.append("username", updated.username);
       form.append("email", updated.email);
-
       if (updated.photo && !updated.photo.startsWith("http")) {
         form.append("photo", {
           uri: updated.photo,
@@ -71,14 +66,14 @@ export default function Index() {
       });
 
       const data = await res.json();
-      console.log("PROFILE API RESPONSE =>", data); // 👈 ADD THIS LOG
+      console.log("PROFILE API RESPONSE =>", data);
 
       if (!data.success) {
         Alert.alert("Update Failed", data.message ?? "Server error");
-        return false; // 👈 important
+        return false;
       }
 
-      const updatedUser = data.user; // 👈 FIX — your API returns {success, message, user}
+      const updatedUser = data.user;
 
       if (!updatedUser) {
         Alert.alert("Error", "User not returned from server");
